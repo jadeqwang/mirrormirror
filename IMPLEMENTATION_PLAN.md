@@ -300,13 +300,32 @@ Independent of each other and of §6.2, with one exception: **do the typecheck t
 | # | Task | Done when |
 | --- | --- | --- |
 | 1 | Add `tsconfig.json`, `@types/node`, and `npm run typecheck`. **Land this first.** | `npm run typecheck` passes clean on the current tree, and covers `kiosk/src`, `server`, and the `.test.ts` files. |
-| 2 | Write `kiosk/src/config.ts`: a typed loader/parser for the **full** §2.4 contract (`cameras`, `video`, `grade`, `detection`, `timing`, `rearm_key`), with per-field fallbacks. Add `config.example.json` at the repo root. Do **not** edit `main.ts` — §6.2 imports this. | Every §2.4 field round-trips with a sane default; an absent or partial config never throws; `config.example.json` matches the field names in §2.4 exactly. |
+| 2 | Write `kiosk/src/config.ts`: a typed loader/parser for the **full** §2.4 contract, with per-field fallbacks. Add `config.example.json` at the repo root. Do **not** edit `main.ts` — §6.2 imports this. Exact export contract below. | Every §2.4 field round-trips with a sane default; an absent or partial config never throws; `config.example.json` matches the field names in §2.4 exactly. |
 | 3 | Serve `/content/*` and `/config.json` from the node server, and add a `/generate` proxy to the dev setup. | `curl localhost:4173/content/offline-pool.json` returns the pool; `npm run dev` serves `/generate` from the mock without a second manual process. Path traversal stays blocked. |
 | 4 | `ops/launch-chromium.sh`: `wait -n` needs bash. | Shebang is `#!/bin/bash`; the script survives killing one browser without exiting non-zero under dash-free assumptions. |
 | 5 | `video.ts`: unlock device labels before matching — a throwaway `getUserMedia` (or equivalent) before `enumerateDevices`, then release it. | A by-label selector resolves on a fresh Chromium profile with no prior grant. |
 | 6 | `dev-harness/open-two-windows.mjs`: `commandExists()` currently returns a hardcoded `true`. | A machine without Chromium prints the manual-URL fallback instead of spawning a doomed process. |
 | 7 | Narrow `kiosk/vite.config.ts` `publicDir` so `fixtures/eval/` cannot reach the build; keep the mock clips served. | `npm run build` produces no `dist/eval/**`; mock camera clips still load in dev and prod. |
 | 8 | Add `npm run build:server` wrapping the command `provision-pi.sh` currently inlines. | `npm run build && npm run build:server` reproduces what provisioning does. |
+
+**Export contract for task 2** — frozen, because `main.ts` is written against it in parallel. Reuse the existing types rather than redeclaring them: `ScreenRole`, `VideoConfig`, `GradeConfig` from `./video`, and `Roi` from `./detect/model`.
+
+```ts
+export interface KioskConfig {
+  cameras: Record<ScreenRole, string>;
+  video: VideoConfig;
+  grade: GradeConfig;
+  detection: { roi: Roi; sample_fps: number; enter_frames: number; exit_frames: number; threshold: number };
+  timing: { settle_ms: number; spent_empty_ms: number; char_ms: number; beat_gap_ms: number; generation_timeout_ms: number };
+  rearm_key: string;
+}
+
+/** Tries /config.json, then /config.example.json, then built-in defaults. Never throws. */
+export async function loadKioskConfig(fetchImpl?: typeof globalThis.fetch): Promise<KioskConfig>;
+export const DEFAULT_KIOSK_CONFIG: KioskConfig;
+```
+
+`KioskConfig` must stay structurally assignable to `VideoPipelineConfig` so it can be passed straight to `startVideoPipeline`.
 
 ### 6.2 Claude — seams, contracts, and judgment
 
