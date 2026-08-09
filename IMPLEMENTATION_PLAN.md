@@ -287,7 +287,50 @@ Every lane built to its contract and stopped at its boundary, so no one closed t
 
 ---
 
-## 6. Open questions (kiosk-relevant subset of spec §11)
+## 6. Who does what next (assigned 2026-08-09)
+
+**The principle.** Codex takes bounded fixes with mechanical acceptance criteria, in files it already authored. Claude takes the seams, the cross-window contracts, and anything that needs judgment about the piece.
+
+That split follows directly from what the review found. Codex's code quality was not the problem — the gate parser, the occupancy model, and the state machine are all good. The problem was that nine agents each built to a contract and stopped at its edge, so nobody owned the joins. **Integration must not be re-partitioned into lanes.** One owner holds the whole picture or the same gap reappears one level up.
+
+### 6.1 Codex — bounded fixes, parallel-safe
+
+Independent of each other and of §6.2, with one exception: **do the typecheck task first**, because integration is about to exercise every module seam and type errors there are currently invisible.
+
+| # | Task | Done when |
+| --- | --- | --- |
+| 1 | Add `tsconfig.json`, `@types/node`, and `npm run typecheck`. **Land this first.** | `npm run typecheck` passes clean on the current tree, and covers `kiosk/src`, `server`, and the `.test.ts` files. |
+| 2 | Write `kiosk/src/config.ts`: a typed loader/parser for the **full** §2.4 contract (`cameras`, `video`, `grade`, `detection`, `timing`, `rearm_key`), with per-field fallbacks. Add `config.example.json` at the repo root. Do **not** edit `main.ts` — §6.2 imports this. | Every §2.4 field round-trips with a sane default; an absent or partial config never throws; `config.example.json` matches the field names in §2.4 exactly. |
+| 3 | Serve `/content/*` and `/config.json` from the node server, and add a `/generate` proxy to the dev setup. | `curl localhost:4173/content/offline-pool.json` returns the pool; `npm run dev` serves `/generate` from the mock without a second manual process. Path traversal stays blocked. |
+| 4 | `ops/launch-chromium.sh`: `wait -n` needs bash. | Shebang is `#!/bin/bash`; the script survives killing one browser without exiting non-zero under dash-free assumptions. |
+| 5 | `video.ts`: unlock device labels before matching — a throwaway `getUserMedia` (or equivalent) before `enumerateDevices`, then release it. | A by-label selector resolves on a fresh Chromium profile with no prior grant. |
+| 6 | `dev-harness/open-two-windows.mjs`: `commandExists()` currently returns a hardcoded `true`. | A machine without Chromium prints the manual-URL fallback instead of spawning a doomed process. |
+| 7 | Narrow `kiosk/vite.config.ts` `publicDir` so `fixtures/eval/` cannot reach the build; keep the mock clips served. | `npm run build` produces no `dist/eval/**`; mock camera clips still load in dev and prod. |
+| 8 | Add `npm run build:server` wrapping the command `provision-pi.sh` currently inlines. | `npm run build && npm run build:server` reproduces what provisioning does. |
+
+### 6.2 Claude — seams, contracts, and judgment
+
+Ordered. Items 1–2 are the critical path; 6.1#1 and 6.1#2 should land first.
+
+1. **`kiosk/src/bus.ts`** — write the §2.3 contract as one typed module and make it the only definition. Today `ConductorEvent` lives in `state.ts` and a bare channel factory lives in `present/index.ts`; both get migrated. This is a frozen contract, so whoever writes it fixes the shape everything binds to — it goes first.
+2. **Integration in `main.ts`** — conductor/follower split by role, detection feeding the state machine, the state machine calling the generation client, the presentation layer rendering the envelope, the pre-roll pool loaded from `content/`, `installVideoStallWatchdog` actually installed, and `Presentation` completion driving `stateMachine.complete()`. The one task that must not be subdivided.
+3. **ROI editor coordinate mapping** (§5.2 #1) — map click position through the mirror transform and `object-fit: cover` into source-pixel space. Subtle, and expensive to get wrong on site.
+4. **Generation-failure fallback** (§5.2 #4) — a rejected call must not strand the machine in ARMED. Decide whether the fallback belongs in the client or the conductor; it touches spec §8's "a blank screen is the only failure a visitor can perceive".
+5. **Provider implementation + live ordering check** — once §6.3 decides. The check matters more than the implementation: confirm against the real endpoint that JSON properties actually arrive in schema order, because `parseGateBeforeBeats` throws if they don't, and a permanent drift means no generated performance ever renders.
+6. **Prompt placement** — reconcile the user-turn text block in `model.ts` with `content/README.md`'s claim that it is a system prompt.
+7. **Lane G eval run and scoring**, once photographs exist.
+8. **Lane H grade tuning pass and wall label draft** — the label is blocked on the provider's retention terms, so it trails §6.3.
+
+### 6.3 Blocked on a human
+
+- **Which model provider**, and therefore the retention terms the wall label has to be literally true about.
+- **Monitor model and mount orientation** — still open from spec §11; blocks final layout numbers.
+- **Eval photographs** — consented or licensed, per `fixtures/eval/README.md`. Nothing in §6.2 #7 can start without them.
+- **Everything on the Pi**: day-one latency and CPU measurements, the 30-minute thermal run, burn-in, and on-site ROI and grade tuning. Claude can interpret the results; it cannot take them.
+
+---
+
+## 7. Open questions (kiosk-relevant subset of spec §11)
 
 - Monitor model/orientation — blocks final CSS layout numbers only; lane A should make layout resolution-agnostic.
 - Whether praise-camera framing covers the standing zone — if it doesn't, the ROI editor (lane B) is the tool for finding that out fast on-site; no code contingency needed now.
