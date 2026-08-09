@@ -1,0 +1,100 @@
+:root {
+  color: white;
+  background: black;
+  font-family: Arial, Helvetica, sans-serif;
+  --grade-saturate: 1.15;
+  --grade-contrast: 1.05;
+  --grade-brightness: 1.05;
+  --grade-sepia: 0.12;
+  --grade-vignette: 0.35;
+  --grade-bloom: 0.25;
+  --grade-softfocus: 0.3;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: #000; cursor: none; }
+
+.mirror {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.mirror--ready { opacity: 1; }
+
+.mirror__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.mirror__video--soft,
+.mirror__video--bloom,
+.mirror__vignette { display: none; pointer-events: none; }
+
+.mirror--praise .mirror__video--primary {
+  filter: saturate(var(--grade-saturate)) contrast(var(--grade-contrast))
+    brightness(var(--grade-brightness)) sepia(var(--grade-sepia));
+}
+
+.mirror--praise .mirror__video--soft {
+  display: block;
+  filter: blur(calc(14px * var(--grade-softfocus))) saturate(var(--grade-saturate));
+  opacity: calc(var(--grade-softfocus) * .7);
+  -webkit-mask-image: radial-gradient(circle at center, transparent 25%, black 88%);
+  mask-image: radial-gradient(circle at center, transparent 25%, black 88%);
+}
+
+.mirror--praise .mirror__video--bloom {
+  display: block;
+  filter: blur(calc(18px * var(--grade-bloom))) brightness(1.16);
+  opacity: calc(var(--grade-bloom) * .55);
+  mix-blend-mode: screen;
+}
+
+.mirror--praise .mirror__vignette {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 44%, transparent 48%, rgba(0, 0, 0, var(--grade-vignette)) 100%);
+}
+
+.text-layers { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+
+.boot-status {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 30;
+  transform: translate(-50%, -50%);
+  max-width: min(80vw, 44rem);
+  color: rgba(255, 255, 255, .65);
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  text-align: center;
+}
+
+.boot-status--error { color: #fff; }
+
+.video-debug {
+  position: fixed;
+  z-index: 100;
+  top: 1rem;
+  left: 1rem;
+  max-width: calc(100vw - 2rem);
+  padding: .7rem .85rem;
+  border: 1px solid rgba(255,255,255,.45);
+  background: rgba(0,0,0,.78);
+  color: #9dffae;
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) { .mirror { transition: none; } }

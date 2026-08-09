@@ -1,0 +1,18 @@
+{
+  "source": "generated",
+  "people": [
+    {
+      "descriptor": "the one in the denim jacket",
+      "palette": "blue / white",
+      "formality": "casual",
+      "coherence": "high"
+    }
+  ],
+  "group_size": 1,
+  "beats": [
+    { "screen": "praise", "text": "That blue jacket makes confidence look completely effortless today." },
+    { "screen": "roast", "text": "Effortless is generous; I can see every negotiation from here." },
+    { "screen": "praise", "text": "You call it negotiation because commitment makes you nervous." },
+    { "screen": "roast", "text": "I call that jacket the compromise nobody requested." }
+  ]
+}

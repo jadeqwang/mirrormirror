@@ -1,0 +1,19 @@
+[Unit]
+Description=Mirror Mirror Chromium kiosks
+After=mirrormirror-server.service graphical.target
+Requires=mirrormirror-server.service
+
+[Service]
+Type=simple
+User=mirrormirror
+Group=mirrormirror
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/mirrormirror/.Xauthority
+ExecStart=/opt/mirrormirror/ops/launch-chromium.sh
+Restart=always
+RestartSec=2
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=graphical.target

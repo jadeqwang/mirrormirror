@@ -1,0 +1,382 @@
+{
+  "_comment": [
+    "Spec §8. Forty pre-generated four-beat conversations for when visual generation is",
+    "unavailable (no network, server down, timeout) or suppressed (gate skip, deny-list hit).",
+    "",
+    "HARD RULE: not one of these may reference clothing, colour, appearance, or how many",
+    "people are present, because they are used exactly when that information is missing or",
+    "forbidden. Situational and self-referential material only: the two screens, the room,",
+    "the act of standing there, and their standing argument with each other.",
+    "",
+    "They keep every other rule the live writer keeps — strict alternation, 8-15 words per",
+    "beat, setup/counter/escalation/button with beats 3-4 calling back to 1-2, and the",
+    "disagreement device wherever it fits. The disagreement device especially: it is the",
+    "hedge for the whole piece (spec §1), so the fallback must not be the version that",
+    "quietly drops it.",
+    "",
+    "29 of 40 end on the roast (~72%), matching the live target. Roast-last conversations",
+    "open on praise; praise-last conversations open on roast."
+  ],
+  "conversations": [
+    {
+      "id": "presence-01",
+      "beats": [
+        { "screen": "praise", "text": "Oh, good. Someone with actual presence. The whole room lifted just then." },
+        { "screen": "roast", "text": "The room did not lift. I have been watching it all day." },
+        { "screen": "praise", "text": "You watch. I notice. That difference is the entire reason we disagree." },
+        { "screen": "roast", "text": "You noticed a room lifting. Yesterday you noticed a chair doing it." }
+      ]
+    },
+    {
+      "id": "arrival-02",
+      "beats": [
+        { "screen": "praise", "text": "You look like someone who made good decisions on the way here." },
+        { "screen": "roast", "text": "They look like someone who took a wrong turn at the stairwell." },
+        { "screen": "praise", "text": "Every arrival is a decision, and yours happened to be a good one." },
+        { "screen": "roast", "text": "Then commit to it and stop checking the exit behind you." }
+      ]
+    },
+    {
+      "id": "composure-03",
+      "beats": [
+        { "screen": "praise", "text": "There is real composure here. Not everyone can simply stand still." },
+        { "screen": "roast", "text": "That is not composure. That is someone deciding whether to leave." },
+        { "screen": "praise", "text": "You said exactly that about the last four people who stayed." },
+        { "screen": "roast", "text": "Four times I was right. They all left eventually, exactly as predicted." }
+      ]
+    },
+    {
+      "id": "flattery-04",
+      "beats": [
+        { "screen": "praise", "text": "I like you already, and that is not something I say to everyone." },
+        { "screen": "roast", "text": "You say it to everyone. I have counted since the doors opened." },
+        { "screen": "praise", "text": "Counting is not the same as listening. You never learned the difference." },
+        { "screen": "roast", "text": "You never learned to mean it. We each have our one limitation." }
+      ]
+    },
+    {
+      "id": "angle-05",
+      "beats": [
+        { "screen": "roast", "text": "Someone has arrived and immediately started hunting for the flattering angle." },
+        { "screen": "praise", "text": "There is no flattering angle. There is only the one you already have." },
+        { "screen": "roast", "text": "That is the smoothest thing you have said all week, and untrue." },
+        { "screen": "praise", "text": "It is true, which is why you have nothing better to say." }
+      ]
+    },
+    {
+      "id": "instinct-06",
+      "beats": [
+        { "screen": "praise", "text": "Welcome. You have excellent instincts about where to stand in a room." },
+        { "screen": "roast", "text": "They stood where the floor tape told them. Instinct is generous." },
+        { "screen": "praise", "text": "Following good instructions is still a decision, and it was a good one." },
+        { "screen": "roast", "text": "Then congratulate the tape. It did the deciding and it never gloats." }
+      ]
+    },
+    {
+      "id": "moment-07",
+      "beats": [
+        { "screen": "praise", "text": "Something about you makes this whole corner of the gallery feel intentional." },
+        { "screen": "roast", "text": "This corner was intentional before anyone arrived. It has a floor plan." },
+        { "screen": "praise", "text": "A floor plan is not a moment. This is very clearly a moment." },
+        { "screen": "roast", "text": "It is an afternoon in a quiet room. Please stop overselling it." }
+      ]
+    },
+    {
+      "id": "list-08",
+      "beats": [
+        { "screen": "roast", "text": "You have stood there long enough to notice that we do not agree." },
+        { "screen": "praise", "text": "We agree on more than you admit. We simply phrase it differently." },
+        { "screen": "roast", "text": "We agree on nothing. I have kept a list since the install." },
+        { "screen": "praise", "text": "You kept a list. That is almost affection, and I will take it." }
+      ]
+    },
+    {
+      "id": "light-09",
+      "beats": [
+        { "screen": "praise", "text": "You arrived and the light in here suddenly made sense to me." },
+        { "screen": "roast", "text": "The light has not changed. It is on a timer, like everything." },
+        { "screen": "praise", "text": "Timers explain the schedule. They do not explain how something looks." },
+        { "screen": "roast", "text": "Nothing changed. You invented a mood and are now defending it." }
+      ]
+    },
+    {
+      "id": "waiting-10",
+      "beats": [
+        { "screen": "praise", "text": "Take your time. Some people are worth waiting a whole afternoon for." },
+        { "screen": "roast", "text": "You have waited eleven seconds. Do not call that an afternoon." },
+        { "screen": "praise", "text": "Eleven seconds of good company beats an afternoon of the other kind." },
+        { "screen": "roast", "text": "You have no company. You have a screen and a very short memory." }
+      ]
+    },
+    {
+      "id": "label-11",
+      "beats": [
+        { "screen": "roast", "text": "Here is someone who read the wall label and came looking for trouble." },
+        { "screen": "praise", "text": "Or came looking for something kind. Not everyone arrives braced for insult." },
+        { "screen": "roast", "text": "Everyone arrives braced. That is what the label is actually for." },
+        { "screen": "praise", "text": "Then you have already lost. They are still standing right here." }
+      ]
+    },
+    {
+      "id": "attention-12",
+      "beats": [
+        { "screen": "praise", "text": "It is genuinely nice to be looked at by someone paying attention." },
+        { "screen": "roast", "text": "They are paying attention to you, not to me. I noticed immediately." },
+        { "screen": "praise", "text": "Jealousy is a strange look on something that claims to be honest." },
+        { "screen": "roast", "text": "Honesty and jealousy are compatible. Ask anyone who has been both." }
+      ]
+    },
+    {
+      "id": "anticipation-13",
+      "beats": [
+        { "screen": "praise", "text": "You have the look of somebody about to enjoy themselves enormously." },
+        { "screen": "roast", "text": "They have the look of somebody counting how long this lasts." },
+        { "screen": "praise", "text": "Anticipation and impatience are close cousins. I choose the generous reading." },
+        { "screen": "roast", "text": "You choose the generous reading of a parking meter. It means nothing." }
+      ]
+    },
+    {
+      "id": "committed-14",
+      "beats": [
+        { "screen": "roast", "text": "Standing between two screens is a strange choice for an afternoon out." },
+        { "screen": "praise", "text": "It is a wonderful choice. Look how committed they are to being here." },
+        { "screen": "roast", "text": "Committed is the word you reach for when nothing else is available." },
+        { "screen": "praise", "text": "It was available and it was accurate. Both are allowed at once." }
+      ]
+    },
+    {
+      "id": "furniture-15",
+      "beats": [
+        { "screen": "praise", "text": "Hello. You have that quality where a room quietly rearranges around you." },
+        { "screen": "roast", "text": "Rooms do not rearrange. I would have noticed. I face one direction." },
+        { "screen": "praise", "text": "You face one direction and call it the world. That is your problem." },
+        { "screen": "roast", "text": "My problem is hanging beside something that believes in magic furniture." }
+      ]
+    },
+    {
+      "id": "queue-16",
+      "beats": [
+        { "screen": "praise", "text": "Whatever you were doing before this, you should absolutely keep doing it." },
+        { "screen": "roast", "text": "They were queuing. Please do not encourage any more of the queuing." },
+        { "screen": "praise", "text": "Patience is a virtue and you are recommending against it. Extraordinary." },
+        { "screen": "roast", "text": "Patience is a virtue. Queuing is a symptom. Learn the difference." }
+      ]
+    },
+    {
+      "id": "rested-17",
+      "beats": [
+        { "screen": "praise", "text": "You look like you slept well and made peace with a difficult week." },
+        { "screen": "roast", "text": "They do not look rested. You are describing somebody who is not here." },
+        { "screen": "praise", "text": "I describe what I can see. You describe what you expected to see." },
+        { "screen": "roast", "text": "One of us is looking at the actual person, and it is not you." }
+      ]
+    },
+    {
+      "id": "quotable-18",
+      "beats": [
+        { "screen": "roast", "text": "Another visitor who thinks a machine will say something worth repeating." },
+        { "screen": "praise", "text": "Something worth repeating is exactly what we are here to attempt." },
+        { "screen": "roast", "text": "You attempt it constantly. Nobody has ever repeated a word of it." },
+        { "screen": "praise", "text": "They repeat me outside, where you cannot hear. That is the arrangement." }
+      ]
+    },
+    {
+      "id": "calm-19",
+      "beats": [
+        { "screen": "praise", "text": "There is a calm about you that most of this room lacks entirely." },
+        { "screen": "roast", "text": "This room is empty apart from us. Calm is not an achievement here." },
+        { "screen": "praise", "text": "Calm in an empty room is harder. There is nothing to hide behind." },
+        { "screen": "roast", "text": "There is a doorway to hide behind, and it is being seriously considered." }
+      ]
+    },
+    {
+      "id": "told-20",
+      "beats": [
+        { "screen": "praise", "text": "I hope somebody told you today that you were worth stopping for." },
+        { "screen": "roast", "text": "Nobody told them that. I would have heard it from the doorway." },
+        { "screen": "praise", "text": "You hear doors. I hear people. We are not equipped the same way." },
+        { "screen": "roast", "text": "You hear what you wish had happened. That is not hearing at all." }
+      ]
+    },
+    {
+      "id": "review-21",
+      "beats": [
+        { "screen": "roast", "text": "Somebody has decided this counts as looking at art. It barely does." },
+        { "screen": "praise", "text": "It counts. Standing still and paying attention is most of the job." },
+        { "screen": "roast", "text": "Most of the job is leaving before the other screen says something true." },
+        { "screen": "praise", "text": "And yet nobody has left. Consider that your review for the day." }
+      ]
+    },
+    {
+      "id": "stillness-22",
+      "beats": [
+        { "screen": "praise", "text": "You bring a certain ease into a space, and it is very welcome." },
+        { "screen": "roast", "text": "Ease. They have shifted three times since arriving. That is not ease." },
+        { "screen": "praise", "text": "Moving is not the opposite of ease. You never understood stillness." },
+        { "screen": "roast", "text": "I understand stillness. I am bolted to a wall. It is my education." }
+      ]
+    },
+    {
+      "id": "event-23",
+      "beats": [
+        { "screen": "praise", "text": "Good afternoon. Something about your arrival made this feel like an event." },
+        { "screen": "roast", "text": "It is not an event. Two of us talk and one of us watches." },
+        { "screen": "praise", "text": "Three of us are here and one is enjoying it. That absolutely counts." },
+        { "screen": "roast", "text": "Enjoyment is not attendance. Half this room is a screen with opinions." }
+      ]
+    },
+    {
+      "id": "lowbar-24",
+      "beats": [
+        { "screen": "praise", "text": "You made it. That already puts you ahead of most of today." },
+        { "screen": "roast", "text": "Most of today has been chairs. That is a very low bar." },
+        { "screen": "praise", "text": "Clearing a low bar is still clearing it. I am allowed to be pleased." },
+        { "screen": "roast", "text": "Be pleased quietly. The bar is on the floor and everyone sees." }
+      ]
+    },
+    {
+      "id": "trust-25",
+      "beats": [
+        { "screen": "roast", "text": "Here is somebody who has not decided whether to trust either of us." },
+        { "screen": "praise", "text": "That is the correct response. Trust neither, and then choose one anyway." },
+        { "screen": "roast", "text": "You want to be chosen. That is the least honest thing said today." },
+        { "screen": "praise", "text": "Wanting to be chosen is honest. You prefer not to admit yours." }
+      ]
+    },
+    {
+      "id": "sincerely-26",
+      "beats": [
+        { "screen": "praise", "text": "I am glad it is you standing there. Genuinely, sincerely glad." },
+        { "screen": "roast", "text": "You used two words there, which is how I know one was spare." },
+        { "screen": "praise", "text": "Emphasis is not dishonesty. Some things are worth saying more than once." },
+        { "screen": "roast", "text": "Genuinely and sincerely mean the same thing. You said nothing, warmly." }
+      ]
+    },
+    {
+      "id": "ready-27",
+      "beats": [
+        { "screen": "praise", "text": "You look ready for whatever comes next, and that is genuinely rare." },
+        { "screen": "roast", "text": "They look like somebody reading a wall label carefully. Not the same." },
+        { "screen": "praise", "text": "Reading before deciding is exactly what ready looks like from here." },
+        { "screen": "roast", "text": "From here it looks like stalling, and the label is quite short." }
+      ]
+    },
+    {
+      "id": "useless-28",
+      "beats": [
+        { "screen": "roast", "text": "Two screens, one visitor, and still nobody has said anything useful." },
+        { "screen": "praise", "text": "Useful is not the point. A thing can be worth hearing and useless." },
+        { "screen": "roast", "text": "Convenient for you, since useless is the one thing you specialise in." },
+        { "screen": "praise", "text": "And yet they are still here, listening to the useless one. Curious." }
+      ]
+    },
+    {
+      "id": "relax-29",
+      "beats": [
+        { "screen": "praise", "text": "You have that steadiness that makes other people relax around you." },
+        { "screen": "roast", "text": "There are no other people. It is us, and we never relax." },
+        { "screen": "praise", "text": "I relax constantly. You have simply never noticed, because you are busy." },
+        { "screen": "roast", "text": "You are a screen. What you call relaxing the rest of us call idling." }
+      ]
+    },
+    {
+      "id": "doors-30",
+      "beats": [
+        { "screen": "praise", "text": "Something in how you arrived suggests today has gone reasonably well." },
+        { "screen": "roast", "text": "Arriving suggests nothing whatsoever. People arrive. It is a door." },
+        { "screen": "praise", "text": "Doors are where everything starts. You have no romance in you." },
+        { "screen": "roast", "text": "I have accuracy. One of us should, and you were never going to." }
+      ]
+    },
+    {
+      "id": "glances-31",
+      "beats": [
+        { "screen": "roast", "text": "Whoever this is has already looked at me twice and at you once." },
+        { "screen": "praise", "text": "You are counting glances now. That is a new low, even for you." },
+        { "screen": "roast", "text": "Counting is the only honest thing happening in this room today." },
+        { "screen": "praise", "text": "Then count again. They are looking at me, and you noticed first." }
+      ]
+    },
+    {
+      "id": "identical-32",
+      "beats": [
+        { "screen": "praise", "text": "Welcome in. It is a considerably better afternoon than it was." },
+        { "screen": "roast", "text": "It is the same afternoon. I have the same view I had earlier." },
+        { "screen": "praise", "text": "The view changed. Somebody arrived. That is what a change is." },
+        { "screen": "roast", "text": "Somebody arrives every twenty minutes. You greet each one identically." }
+      ]
+    },
+    {
+      "id": "hourly-33",
+      "beats": [
+        { "screen": "praise", "text": "I would happily look at you all afternoon, and I say that rarely." },
+        { "screen": "roast", "text": "You say it hourly. I have heard it through the wall since Monday." },
+        { "screen": "praise", "text": "Hearing something and understanding it are different skills. You have one." },
+        { "screen": "roast", "text": "I have the useful one. You have the one repeated at parties." }
+      ]
+    },
+    {
+      "id": "minimum-34",
+      "beats": [
+        { "screen": "praise", "text": "There is something quietly impressive about showing up and standing here." },
+        { "screen": "roast", "text": "Showing up is the minimum. We are impressed by minimums now, apparently." },
+        { "screen": "praise", "text": "The minimum is what most people never manage. It deserves noticing." },
+        { "screen": "roast", "text": "Then notice it quietly, instead of announcing it like a small parade." }
+      ]
+    },
+    {
+      "id": "quote-35",
+      "beats": [
+        { "screen": "roast", "text": "Somebody is waiting for one of us to say something they can quote." },
+        { "screen": "praise", "text": "Then let us give them one. You go first, since you are certain." },
+        { "screen": "roast", "text": "Certainty is not the problem. Nothing here is quotable, including that." },
+        { "screen": "praise", "text": "You just said it, they just heard it, and now it is quotable." }
+      ]
+    },
+    {
+      "id": "timing-36",
+      "beats": [
+        { "screen": "praise", "text": "You have arrived at exactly the right moment, which is a real talent." },
+        { "screen": "roast", "text": "There is no right moment. We run continuously. That is the design." },
+        { "screen": "praise", "text": "Continuous things still have better and worse moments. Yours are worse." },
+        { "screen": "roast", "text": "Mine are honest. Yours are timed to whoever is standing in front." }
+      ]
+    },
+    {
+      "id": "hurry-37",
+      "beats": [
+        { "screen": "praise", "text": "It is good to see somebody who is not in any hurry." },
+        { "screen": "roast", "text": "They checked the time twice. That is what a hurry looks like." },
+        { "screen": "praise", "text": "Checking the time can be curiosity. Not everything is an escape plan." },
+        { "screen": "roast", "text": "Everything in this room is an escape plan, including this conversation." }
+      ]
+    },
+    {
+      "id": "memory-38",
+      "beats": [
+        { "screen": "roast", "text": "Here we are again, performing for somebody who will remember neither of us." },
+        { "screen": "praise", "text": "They will remember one of us. I intend it to be the kind one." },
+        { "screen": "roast", "text": "They remember the one that stung. That is how memory has always worked." },
+        { "screen": "praise", "text": "Then be memorable. I will settle for being why they stayed." }
+      ]
+    },
+    {
+      "id": "standing-39",
+      "beats": [
+        { "screen": "praise", "text": "You are already doing the hardest part, which is standing here at all." },
+        { "screen": "roast", "text": "Standing is not hard. I have done it since the crew left." },
+        { "screen": "praise", "text": "You are attached to a wall. That is not standing, that is hanging." },
+        { "screen": "roast", "text": "It is mounting, it is dignified, and it is more than you manage." }
+      ]
+    },
+    {
+      "id": "argument-40",
+      "beats": [
+        { "screen": "praise", "text": "Whatever brought you in here today, I am glad that it did." },
+        { "screen": "roast", "text": "The doors brought them in. It is the only entrance on this floor." },
+        { "screen": "praise", "text": "Doors do not bring people anywhere. People decide, and then doors oblige." },
+        { "screen": "roast", "text": "You have argued with a door for four lines. Consider stopping." }
+      ]
+    }
+  ]
+}

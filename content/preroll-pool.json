@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "Spec §7. On ARMED the praise screen types one of these instantly, from local memory,",
+    "with no network call and nothing to await. It covers the 3-5 second generation gap so",
+    "two silent screens never read as broken, and it covers a skipped generation invisibly:",
+    "the greeting is already on screen while the fallback conversation loads.",
+    "",
+    "Two words each, warm but never about how anyone looks — this fires before any frame has",
+    "been read, so it cannot know anything about the visitor and must not pretend to.",
+    "It is always the praise screen. The roast screen holds."
+  ],
+  "screen": "praise",
+  "lines": [
+    "oh, hello",
+    "well, hello",
+    "hello, you",
+    "ah, hello",
+    "oh, good",
+    "hello again",
+    "oh, lovely",
+    "hello, stranger",
+    "well, finally",
+    "oh, wonderful",
+    "there, hello",
+    "hello, then"
+  ]
+}

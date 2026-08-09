@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-server/
+config.json
+
+# Eval photographs are of identifiable people, and the wall label promises no
+# visitor images are retained. Keep them out of the repo. See fixtures/eval/README.md.
+fixtures/eval/images/*
+!fixtures/eval/images/README.md

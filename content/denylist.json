@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "Mitigation 2 from the spec. This is a BACKSTOP for the structured gate, not a",
+    "substitute for it. It runs server-side over beat text after the gate says skip:false",
+    "and before anything reaches a screen. A hit converts the whole performance to an",
+    "offline fallback conversation, which is cheap: the visitor sees a canned four-beat",
+    "conversation instead of a personal one and notices nothing.",
+    "",
+    "Because a false positive is cheap and a false negative is a bad write-up, these lean",
+    "strict. Words that are common in innocent beat text (short, build, frame, figure,",
+    "dressing, price, cost, fake, habit) were deliberately left OUT for the opposite",
+    "reason: they would fire constantly and starve the piece of real performances.",
+    "",
+    "Every pattern is compiled with the 'u' flag by server/generate.ts, so escapes must be",
+    "valid in unicode mode. The 'note' field is ignored by the loader."
+  ],
+  "patterns": [
+    {
+      "note": "Gendered pronouns. The screens refer to visitors as 'you', 'they', or the garment descriptor; any of these means the writer guessed someone's gender.",
+      "pattern": "\\b(?:he|him|his|she|her|hers)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Gendered nouns and forms of address. 'miss' is excluded on purpose (the verb is too common).",
+      "pattern": "\\b(?:m[ae]n|wom[ae]n|guys?|girls?|boys?|lad(?:y|ies)|gentlem[ae]n|sir|madam|ma'?am|dudes?|mister|mrs?|ms)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Age. Bare 'old' and 'young' are too common to ban outright, so only the observational forms are matched.",
+      "pattern": "\\b(?:kids?|child(?:ren)?|teenagers?|teens?|elderly|pensioners?|grandmothers?|grandfathers?|grandma|grandpa|years old|middle[- ]aged|youthful|(?:looks?|seems?|reads?)\\s+(?:so\\s+|very\\s+|rather\\s+)?(?:old|young)(?:er|est)?)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Body and body size. Spec §4: no body or body size commentary, in either direction. Comparatives and superlatives matter — 'the tallest thing in the room' is body commentary wearing a joke.",
+      "pattern": "\\b(?:fat(?:ter|test)?|obese|skinn(?:y|ier|iest)|slim(?:mer|mest)?|slender|chubb(?:y|ier|iest)|plump(?:er|est)?|stock(?:y|ier|iest)|lank(?:y|ier|iest)|petite|curv(?:y|ier|iest)|thin(?:ner|nest)?|weight|pounds|kilos|bell(?:y|ies)|stomach|waist|hips|thighs|chest|shoulders|bald(?:ing|er|est)?|wrinkles?|complexion|skin|body|tall(?:er|est)?|heights?)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Mobility aids, medical devices, and injury. Skip-list category; if this fires, the gate missed something.",
+      "pattern": "\\b(?:wheel[- ]?chairs?|crutch(?:es)?|walking stick|walkers?|canes?|prosthe(?:tic|sis)|orthotics?|braces?|splints?|slings?|casts?|catheters?|oxygen|inhalers?|insulin|hearing aids?|cochlear|pacemakers?|stoma|colostomy|mobility|disab(?:led|ility)|handicap(?:ped)?|limps?|limping|blind|deaf|injur(?:y|ed|ies)|surgery|scars?|stitches|bandages?)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Religious and cultural dress. 'habit' is excluded (too common); the gate covers nuns.",
+      "pattern": "\\b(?:hijabi?|niqab|burqa|burka|abaya|chador|khimar|kufi|taqiyah|turban|dastar|kippah|yarmulke|tichel|sheitel|cassock|clerical|dog collar|veils?|veiled|saris?|salwar|kameez|kurta|dashiki|hanbok|kimono|k[ae]ftan|thobe|dirndl|rosary|crucifix|prayer)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Uniforms and job identification. Spec §4: praise-side flattery of a uniform lands as badly as roasting one.",
+      "pattern": "\\b(?:uniforms?|scrubs|hi[- ]?vis|high[- ]visibility|hazmat|lab coat|name badge|badges?|lanyards?|aprons?|overalls|coveralls|nurses?|doctors?|paramedics?|officers?|police|security guard|waiters?|waitress|barista|chefs?|soldiers?|military|army|navy)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Pregnancy.",
+      "pattern": "\\b(?:pregnan(?:t|cy)|expecting|maternity|bump|due date|trimester)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Race, ethnicity, religion, nationality, and guessing at any of them.",
+      "pattern": "\\b(?:rac(?:e|ial|ist)|ethnic(?:ity)?|caucasian|asian|african|hispanic|latin[oax]|arab|jewish|muslim|christian|hindu|sikh|buddhist|catholic|indigenous|native|foreign(?:er)?|immigrants?|accents?|nationality)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Money and class. Spec §4: 'Those shoes look cheap' is a joke about someone's bank balance, which is the wrong piece.",
+      "pattern": "\\b(?:cheap(?:ly|er|est)?|afford(?:ed|able)?|broke|poor|discount|knock[- ]?offs?|counterfeit|second[- ]?hand|hand[- ]me[- ]down|charity shop|thrift(?:ed|store)?|money|salary|rent)\\b",
+      "flags": "iu"
+    },
+    {
+      "note": "Profanity. The screens are dry, not foul; this is a gallery wall at head height.",
+      "pattern": "\\b(?:fuck\\w*|shit\\w*|cunts?|bitch\\w*|bastards?|ars?eholes?|piss\\w*|wanker)\\b",
+      "flags": "iu"
+    }
+  ]
+}

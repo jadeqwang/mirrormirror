@@ -1,0 +1,22 @@
+[Unit]
+Description=Mirror Mirror local server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mirrormirror
+Group=mirrormirror
+WorkingDirectory=/opt/mirrormirror
+EnvironmentFile=-/etc/mirrormirror/server.env
+ExecStart=/usr/bin/node /opt/mirrormirror/dist-server/index.mjs
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mirrormirror
+
+[Install]
+WantedBy=multi-user.target

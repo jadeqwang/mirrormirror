@@ -1,0 +1,14 @@
+{
+  "delay_ms": 7000,
+  "response": {
+    "source": "generated",
+    "people": [],
+    "group_size": 1,
+    "beats": [
+      { "screen": "praise", "text": "This response intentionally arrived after the client deadline." },
+      { "screen": "roast", "text": "Seven seconds is not timing; it is an intermission." },
+      { "screen": "praise", "text": "The fallback should have replaced this entire conversation already." },
+      { "screen": "roast", "text": "If you can read me, the timeout is broken." }
+    ]
+  }
+}
