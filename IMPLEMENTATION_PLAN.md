@@ -292,8 +292,8 @@ The integration gaps, all six bugs, and the project-hygiene items the 2026-08-09
 
 ### 5.2 Never done, and still the real risks
 
-- **Run it in a browser.** M1 is proven in tests but nobody has opened two windows and watched a performance. `npm run dev` now does the whole loop against mocks. This needs no hardware and no decisions.
-- **Run the writer prompt against a model, with an image.** Text-only probes now work, but no call has ever carried a photograph, so vision is unverified and the with-image latency is unknown. Beyond that the gate is unscored and the tone unjudged — that needs the eval photographs (`fixtures/eval/README.md` covers sourcing and consent) and is blocked behind the §5.1 decision, since a rename changes the prompt the eval judges.
+- **Run it in a browser.** M1 is proven in tests but nobody has opened two windows and watched a performance. `npm run dev` does the whole loop against mocks and needs no hardware. **`npm run rehearse` + `npm run screens` does it for real** — two USB webcams and one wide monitor, same build, same server, same model, same launcher as the show, only the window geometry differs. That is the cheapest path to every remaining software unknown at once: vision, with-image latency, detection against a real room, and whether the beats are funny.
+- **Run the writer prompt against a model, with an image.** Text-only probes work, but no call has ever carried a photograph, so vision is unverified and the with-image latency is unknown — `npm run verify:provider -- photo.jpg` answers that in one call, and a desk rehearsal answers it continuously. Beyond that the gate is unscored and the tone unjudged; that needs the eval photographs (`fixtures/eval/README.md` covers sourcing and consent). No longer blocked — §5.1 is settled, so the prompt the eval judges is now stable.
 - **Grade tuning and the wall label** (lane H). Unblocked — every knob is parameterised. The label depends on the provider's retention terms.
 - **Everything on the Pi** (lane I): day-one latency and CPU measurements, the 30-minute thermal run, burn-in, ROI drawn in situ, grade tuned in the room, cold spare flashed.
 
@@ -372,8 +372,9 @@ Ordered. Items 1–2 are the critical path; 6.1#1 and 6.1#2 should land first.
 5. ✅ **Provider implementation + live ordering check** — Workers AI wired, credentials set up, and the endpoint actually called. The check earned its keep: it found thinking mode returning empty content at 13–26s, and the alphabetical key ordering that now blocks lane C. Findings are recorded under lane C; the decision is §5.1.
 6. ✅ **Prompt placement** — the writer prompt is a `system` message; code and `content/README.md` agree.
 7. ✅ **Applied §5.1 option 1** — schema renamed and reordered, 5/5 in gate order live. Still to do: re-run `verify:provider` **with a photograph** to confirm vision and with-image latency.
-8. **Lane G eval run and scoring**, once photographs exist and §5.1 is settled.
-9. **Lane H grade tuning pass and wall label draft** — the label is blocked on the provider's retention terms.
+8. ✅ **Desk rehearsal path** (2026-08-10) — `npm run rehearse` builds both halves and serves the real thing on `:4173`; `npm run screens` is the *same* `ops/launch-chromium.sh` the Pi runs, with `KIOSK_MODE=0` for two windows side by side on one monitor instead of two fullscreen displays. Deliberately not a second launcher: a rehearsal that exercises different launch code proves less than it appears to. Camera-resolution failures now print the cameras the browser can actually see, in the browser's own names, because `v4l2-ctl` names do not match and the alternative is guessing at `config.json`.
+9. **Lane G eval run and scoring**, once photographs exist.
+10. **Lane H grade tuning pass and wall label draft** — the label is blocked on the provider's retention terms.
 
 ### 6.3 Blocked on a human
 

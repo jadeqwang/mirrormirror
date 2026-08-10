@@ -2,6 +2,9 @@ node_modules/
 dist/
 dist-server/
 config.json
+# Desk-rehearsal Chromium profiles (`npm run screens`). They hold the camera
+# permission grant, which is the point — deleting them means granting again.
+.chromium/
 
 # Eval photographs are of identifiable people, and the wall label promises no
 # visitor images are retained. Keep them out of the repo. See fixtures/eval/README.md.

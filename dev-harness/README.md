@@ -5,6 +5,10 @@ starts Vite and opens praise and roast URLs in one Chromium window. Both URLs
 select mock camera and generation modes; change the generated case with
 `MOCK_GENERATION_CASE=skip|malformed|slow`.
 
+This harness is for working on the code without hardware or credentials. To
+rehearse the actual piece — real cameras, real model, the launcher the Pi runs —
+use `npm run rehearse` and `npm run screens` instead; see the README.
+
 ## Mock camera integration
 
 Lane A should import `kiosk/src/dev/mock-camera.ts`, branch before

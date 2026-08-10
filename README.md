@@ -17,8 +17,8 @@ The loop closes in software. A trigger runs detection → state machine → one 
 Being straight about what that does *not* mean:
 
 - **It has never been run in a browser.** Nobody has opened two windows and watched a performance.
-- **No beat has ever come from a real model.** Everything so far runs against mocks.
-- **The provider is chosen but unproven.** Runtime is Kimi K2.7 on Cloudflare Workers AI (`@cf/moonshotai/kimi-k2.7-code`). Not one call has been made against it — run `npm run verify:provider` before believing anything about it.
+- **The prompt has never seen a photograph.** The provider works — Kimi K2.7 on Cloudflare Workers AI (`@cf/moonshotai/kimi-k2.7-code`), 5/5 in gate order, 3.2s median against a 5.5s budget — but every call so far has been text-only. Vision is the one assumption the design rests on that is still unexercised.
+- **No beat has been judged.** The eval set has no images and nothing has been scored.
 - **Nothing has touched the hardware.** No Raspberry Pi, no cameras, no latency or thermal measurements.
 
 `IMPLEMENTATION_PLAN.md` §5 is the live list of what's left. The gallery show is real and the install window is short.
@@ -81,6 +81,33 @@ stability, whether the image was accepted, and latency against the timeout. Use
 
 Then start the server without `MOCK_GENERATION=1`. `GENERATION_PROVIDER=openai` plus
 `OPENAI_API_KEY` still works if you need to compare.
+
+### Rehearsing on a desk
+
+Two USB webcams and one wide monitor reproduce the whole piece before any Pi exists.
+Same build, same server, same model, same launcher as the show — only the window
+geometry differs, so what gets rehearsed is the thing that ships.
+
+```sh
+cp config.example.json config.json     # gitignored, per-machine
+npm run rehearse                       # build both, serve on :4173, real model
+npm run screens                        # two windows, side by side
+```
+
+Camera selectors are the only thing to fill in. Leave them as the placeholders on the
+first run: each window fails to boot and prints the cameras it can actually see, in the
+browser's own names. Copy a distinctive fragment of each into `cameras.praise` and
+`cameras.roast` and reload. Selection is by deviceId or label substring and never by
+enumeration order — that would silently swap the two mirrors on the next reboot, and
+the piece cannot notice it is flattering the wrong feed.
+
+Point the praise camera slightly *above* eye level and the roast camera low and
+off-axis. That difference is the piece, and it is the part a desk rehearsal can get
+wrong without looking wrong.
+
+Then stand in front of it. `?roi=1` on the praise window redraws the detection region
+by clicking four corners, which is the setting most worth tuning at desk scale and
+again on site.
 
 ---
 

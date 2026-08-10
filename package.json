@@ -12,7 +12,9 @@
     "typecheck": "tsc -p tsconfig.kiosk.json && tsc -p tsconfig.server.json",
     "verify:provider": "node --env-file-if-exists=.env --experimental-strip-types server/verify-provider.ts",
     "prepare": "git config core.hooksPath .githooks || true",
-    "start": "node --env-file-if-exists=.env dist-server/index.mjs"
+    "start": "node --env-file-if-exists=.env dist-server/index.mjs",
+    "rehearse": "npm run build && npm run build:server && npm start",
+    "screens": "KIOSK_MODE=0 PROFILE_ROOT=.chromium ops/launch-chromium.sh"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

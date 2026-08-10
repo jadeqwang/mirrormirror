@@ -49,17 +49,7 @@ function normalize(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
-/**
- * Browser deviceIds are opaque. With the kiosk profile's persistent camera
- * permission, labels are populated and a config value may be either the exact
- * deviceId or a stable serial/by-path substring exposed in the device label.
- * We deliberately never fall back to enumeration order.
- */
-async function resolveCameraDeviceId(selector: string): Promise<string> {
-  if (!selector.trim()) {
-    throw new Error("Camera selector is empty; configure a deviceId or label serial/path");
-  }
-
+async function listCameras(): Promise<MediaDeviceInfo[]> {
   let devices = (await navigator.mediaDevices.enumerateDevices()).filter(
     (device) => device.kind === "videoinput",
   );
@@ -79,6 +69,42 @@ async function resolveCameraDeviceId(selector: string): Promise<string> {
       (device) => device.kind === "videoinput",
     );
   }
+  return devices;
+}
+
+/**
+ * Every camera failure is a setup failure, and the person reading it is standing
+ * at the machine with no way to see what the browser can see. So each message
+ * ends with the list to copy a selector out of — anything less means guessing at
+ * `config.json` from `v4l2-ctl` output that does not use the browser's names.
+ */
+function cameraChoices(devices: readonly MediaDeviceInfo[]): string {
+  if (devices.length === 0) return " No cameras are connected.";
+  const named = devices.map((device) => `  ${device.label || `(unlabelled) ${device.deviceId}`}`);
+  const hidden = devices.some((device) => !device.label)
+    ? "\nCamera labels are hidden; grant persistent camera permission to this profile."
+    : "";
+  return `\nCameras this window can see:\n${named.join("\n")}${hidden}`;
+}
+
+/**
+ * Browser deviceIds are opaque. With the kiosk profile's persistent camera
+ * permission, labels are populated and a config value may be either the exact
+ * deviceId or a stable serial/by-path substring exposed in the device label.
+ * We deliberately never fall back to enumeration order: picking a camera by
+ * position would silently swap the two mirrors on the next reboot, and the
+ * piece has no way to notice it is flattering the wrong feed.
+ */
+async function resolveCameraDeviceId(selector: string, role: ScreenRole): Promise<string> {
+  if (!selector.trim()) {
+    const devices = await listCameras().catch((): MediaDeviceInfo[] => []);
+    throw new Error(
+      `No camera configured for the ${role} screen. Put a deviceId or a distinctive ` +
+      `part of the label in config.json under cameras.${role}.${cameraChoices(devices)}`,
+    );
+  }
+
+  const devices = await listCameras();
   const wanted = normalize(selector);
   const exact = devices.find((device) => device.deviceId === selector);
   if (exact) return exact.deviceId;
@@ -86,13 +112,13 @@ async function resolveCameraDeviceId(selector: string): Promise<string> {
   const labelMatches = devices.filter((device) => normalize(device.label).includes(wanted));
   if (labelMatches.length === 1) return labelMatches[0].deviceId;
   if (labelMatches.length > 1) {
-    throw new Error(`Camera selector ${JSON.stringify(selector)} matches multiple devices`);
+    throw new Error(
+      `Camera selector ${JSON.stringify(selector)} matches ${labelMatches.length} devices; ` +
+      `make it more specific.${cameraChoices(labelMatches)}`,
+    );
   }
 
-  const permissionHint = devices.some((device) => !device.label)
-    ? " Camera labels are hidden; grant persistent camera permission to the kiosk profile."
-    : "";
-  throw new Error(`Configured camera ${JSON.stringify(selector)} was not found.${permissionHint}`);
+  throw new Error(`Configured ${role} camera ${JSON.stringify(selector)} was not found.${cameraChoices(devices)}`);
 }
 
 function setGradeVariables(root: HTMLElement, grade: GradeConfig): void {
@@ -167,7 +193,7 @@ export async function startVideoPipeline(
     mockSource = document.createElement("video");
     stream = await createMockCameraStream(mockSource);
   } else {
-    const deviceId = await resolveCameraDeviceId(config.cameras[role]);
+    const deviceId = await resolveCameraDeviceId(config.cameras[role], role);
     stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: {
