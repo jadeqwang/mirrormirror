@@ -9,13 +9,23 @@ import { serveStatic } from "./static.ts";
 const startedAt = Date.now();
 const config = await loadServerConfig();
 const [prompt, denylist, offlinePool] = await Promise.all([loadWriterPrompt(config.promptPath), loadDenylist(config.denylistPath), loadOfflinePool(config.offlinePoolPath)]);
-const provider = createProviderGenerator({ apiKey: config.apiKey, apiUrl: config.apiUrl, model: config.model, prompt });
+const provider = createProviderGenerator({
+  provider: config.provider,
+  apiKey: config.apiKey,
+  apiUrl: config.apiUrl,
+  model: config.model,
+  prompt,
+  // Keep the provider's own abort inside the handler's deadline so a slow
+  // generation surfaces as a timeout rather than a hung socket.
+  timeoutMs: Math.max(500, config.generationTimeoutMs - 100),
+  maxTokens: config.maxTokens,
+});
 
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
     if (request.method === "GET" && url.pathname === "/health") {
-      json(response, 200, { ok: true, model: config.model, uptime_s: Math.floor((Date.now() - startedAt) / 1000) }); return;
+      json(response, 200, { ok: true, provider: config.provider, model: config.model, uptime_s: Math.floor((Date.now() - startedAt) / 1000) }); return;
     }
     if (url.pathname === "/generate") {
       const handler = createGenerationHandler({

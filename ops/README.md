@@ -1,9 +1,16 @@
 # Raspberry Pi operations
 
 Provision Raspberry Pi OS Lite (64-bit), enable its minimal graphical session,
-clone/copy the repository, and run `sudo ops/provision-pi.sh`. Put only the API
-key in `/etc/mirrormirror/server.env` (`OPENAI_API_KEY=...`, mode 0600). The
-browser never receives it. The server binds to loopback by default.
+clone/copy the repository, and run `sudo ops/provision-pi.sh`. Put only the
+credentials in `/etc/mirrormirror/server.env` (mode 0600) — for the default
+Cloudflare Workers AI provider that is `CLOUDFLARE_ACCOUNT_ID` and
+`CLOUDFLARE_API_TOKEN`. The browser never receives them, and the server binds
+to loopback by default.
+
+Before the show, run `npm run verify:provider -- <a photo>` on the Pi itself.
+It checks the three things the piece depends on and the network path can only
+be judged from the venue: that the model honours the gate field order, that it
+accepts the frame, and that it answers inside the timeout.
 
 ## Hardware verification
 

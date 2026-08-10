@@ -9,7 +9,8 @@
     "dev:server": "vite --host 127.0.0.1 kiosk",
     "fixtures:video": "node dev-harness/generate-video-fixtures.mjs",
     "test": "node --test",
-    "typecheck": "tsc -p tsconfig.kiosk.json && tsc -p tsconfig.server.json"
+    "typecheck": "tsc -p tsconfig.kiosk.json && tsc -p tsconfig.server.json",
+    "verify:provider": "node --experimental-strip-types server/verify-provider.ts"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

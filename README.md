@@ -18,7 +18,7 @@ Being straight about what that does *not* mean:
 
 - **It has never been run in a browser.** Nobody has opened two windows and watched a performance.
 - **No beat has ever come from a real model.** Everything so far runs against mocks.
-- **The model provider is undecided.** The default is OpenAI-shaped because it was chosen while implementing, not because anyone picked it. Hence `OPENAI_API_KEY` below.
+- **The provider is chosen but unproven.** Runtime is Kimi K2.7 on Cloudflare Workers AI (`@cf/moonshotai/kimi-k2.7-code`). Not one call has been made against it — run `npm run verify:provider` before believing anything about it.
 - **Nothing has touched the hardware.** No Raspberry Pi, no cameras, no latency or thermal measurements.
 
 `IMPLEMENTATION_PLAN.md` §5 is the live list of what's left. The gallery show is real and the install window is short.
@@ -52,7 +52,23 @@ Useful URL parameters, all on the kiosk app:
 
 `F9` re-arms the piece by hand — deliberately obscure, and there for the attendant on opening night when detection does something nobody predicted.
 
-To run against a real model, set `OPENAI_API_KEY` and start the server without `MOCK_GENERATION=1`. See the provider caveat above before assuming that is the right endpoint.
+### Running against the real model
+
+```sh
+export CLOUDFLARE_ACCOUNT_ID=...   # Workers AI, paid plan or AI Gateway credits
+export CLOUDFLARE_API_TOKEN=...    # needs the Workers AI Read permission
+npm run verify:provider -- path/to/a/photo.jpg
+```
+
+Do that **before** wiring it into a show. The piece makes one structured call whose
+gate fields must arrive before the beats (see below), and Cloudflare states that
+Workers AI cannot guarantee a model follows the requested schema — so the assumption
+is checked, not trusted. The script runs the real parser five times and reports order
+stability, whether the image was accepted, and latency against the timeout. Use
+`--no-image` to check ordering and credentials without a photograph.
+
+Then start the server without `MOCK_GENERATION=1`. `GENERATION_PROVIDER=openai` plus
+`OPENAI_API_KEY` still works if you need to compare.
 
 ---
 

@@ -19,7 +19,12 @@ install -m 0644 ops/systemd/mirrormirror-server.service ops/systemd/mirrormirror
 install -m 0755 ops/launch-chromium.sh "$INSTALL_ROOT/ops/launch-chromium.sh"
 if [ ! -f /etc/mirrormirror/server.env ]; then
   install -m 0600 -o root -g root /dev/null /etc/mirrormirror/server.env
-  echo '# OPENAI_API_KEY=replace-me' >> /etc/mirrormirror/server.env
+  {
+    echo '# Workers AI. Token needs the Workers AI Read permission.'
+    echo '# CLOUDFLARE_ACCOUNT_ID=replace-me'
+    echo '# CLOUDFLARE_API_TOKEN=replace-me'
+    echo '# GENERATION_MODEL=@cf/moonshotai/kimi-k2.7-code'
+  } >> /etc/mirrormirror/server.env
 fi
 systemctl daemon-reload
 systemctl enable mirrormirror-server.service mirrormirror-kiosk.service
