@@ -13,4 +13,8 @@ fixtures/eval/images/*
 .env
 .env.*
 *.env
+# Editor backups. gnome-text-editor and vim write `.env~` on save, which none
+# of the patterns above match — it is a plain-text copy of the credentials.
+*~
+*.swp
 !.env.example
