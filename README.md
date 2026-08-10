@@ -95,11 +95,23 @@ npm run screens                        # two windows, side by side
 ```
 
 Camera selectors are the only thing to fill in. Leave them as the placeholders on the
-first run: each window fails to boot and prints the cameras it can actually see, in the
-browser's own names. Copy a distinctive fragment of each into `cameras.praise` and
-`cameras.roast` and reload. Selection is by deviceId or label substring and never by
-enumeration order — that would silently swap the two mirrors on the next reboot, and
-the piece cannot notice it is flattering the wrong feed.
+first run: each window fails to boot and prints the cameras it can actually see, with
+the browser's own names and deviceIds. Copy one into `cameras.praise` and the other
+into `cameras.roast`, then reload.
+
+**Two cameras of the same model need deviceIds.** Chromium labels a camera by product
+name and USB vid:pid — `HD Pro Webcam C920 (046d:08e5)` — and not by serial, so a
+matched pair is indistinguishable by label. deviceIds are salted per browser profile
+and the two windows run separate profiles, so take each role's value from that role's
+own window. Each window only resolves its own.
+
+Selection is never by enumeration order. That would silently swap the two mirrors on
+the next reboot, and the piece cannot notice it is flattering the wrong feed.
+
+A word on USB: a C920 draws ~500mA, essentially a full bus-powered port, and two of
+them behind one unpowered hub will not both enumerate. Separate motherboard ports are
+the reliable arrangement. `lsusb -t` shows what actually came up; two `/dev/video*`
+nodes are one camera, not two — the second is its metadata node.
 
 Point the praise camera slightly *above* eye level and the roast camera low and
 off-axis. That difference is the piece, and it is the part a desk rehearsal can get

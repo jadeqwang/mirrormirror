@@ -80,7 +80,10 @@ async function listCameras(): Promise<MediaDeviceInfo[]> {
  */
 function cameraChoices(devices: readonly MediaDeviceInfo[]): string {
   if (devices.length === 0) return " No cameras are connected.";
-  const named = devices.map((device) => `  ${device.label || `(unlabelled) ${device.deviceId}`}`);
+  // deviceId always, not only when the label is missing: two cameras of the same
+  // model carry byte-identical labels, and then the id is the only thing that
+  // tells them apart.
+  const named = devices.map((device) => `  ${device.label || "(unlabelled)"}\n    ${device.deviceId}`);
   const hidden = devices.some((device) => !device.label)
     ? "\nCamera labels are hidden; grant persistent camera permission to this profile."
     : "";
@@ -90,7 +93,15 @@ function cameraChoices(devices: readonly MediaDeviceInfo[]): string {
 /**
  * Browser deviceIds are opaque. With the kiosk profile's persistent camera
  * permission, labels are populated and a config value may be either the exact
- * deviceId or a stable serial/by-path substring exposed in the device label.
+ * deviceId or a distinctive substring of the label.
+ *
+ * Chromium's label is the product name and USB vid:pid — "HD Pro Webcam C920
+ * (046d:08e5)" — and notably *not* the serial number the kernel exposes. So two
+ * cameras of the same model are indistinguishable by label and must be selected
+ * by deviceId. Those are salted per browser profile, and the two windows run
+ * separate profiles, so each `cameras.<role>` value has to be read out of that
+ * role's own window. Each window only ever resolves its own.
+ *
  * We deliberately never fall back to enumeration order: picking a camera by
  * position would silently swap the two mirrors on the next reboot, and the
  * piece has no way to notice it is flattering the wrong feed.
@@ -113,8 +124,9 @@ async function resolveCameraDeviceId(selector: string, role: ScreenRole): Promis
   if (labelMatches.length === 1) return labelMatches[0].deviceId;
   if (labelMatches.length > 1) {
     throw new Error(
-      `Camera selector ${JSON.stringify(selector)} matches ${labelMatches.length} devices; ` +
-      `make it more specific.${cameraChoices(labelMatches)}`,
+      `Camera selector ${JSON.stringify(selector)} matches ${labelMatches.length} devices. ` +
+      `If they are the same model their labels are identical and no substring can separate ` +
+      `them — use one of these deviceIds for cameras.${role} instead.${cameraChoices(labelMatches)}`,
     );
   }
 
