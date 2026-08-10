@@ -2,6 +2,52 @@ import type { Point, Roi } from "./model";
 
 export const ROI_STORAGE_KEY = "mirrormirror.detection.roi";
 
+/**
+ * The editor draws over what the visitor sees; the detector samples the raw
+ * `<video>`. Two transforms sit between them and both must be undone, or the
+ * region drawn on site gates on the wrong part of the frame:
+ *
+ *  1. the display is mirrored (`transform: scaleX(-1)`), so screen-left is
+ *     source-right;
+ *  2. `object-fit: cover` scales the frame to fill the element and crops the
+ *     overflow, so screen space is not a uniform scaling of source space
+ *     whenever the element and the frame disagree about aspect ratio.
+ *
+ * ROI points are stored in normalised *source* coordinates, which is what
+ * `rasterizeRoi` expects.
+ */
+export interface ViewportMapping {
+  rect: { left: number; top: number; width: number; height: number };
+  sourceWidth: number;
+  sourceHeight: number;
+  mirrored: boolean;
+}
+
+function coverGeometry(mapping: ViewportMapping) {
+  const scale = Math.max(mapping.rect.width / mapping.sourceWidth, mapping.rect.height / mapping.sourceHeight);
+  return {
+    scale,
+    left: mapping.rect.left + (mapping.rect.width - mapping.sourceWidth * scale) / 2,
+    top: mapping.rect.top + (mapping.rect.height - mapping.sourceHeight * scale) / 2,
+  };
+}
+
+/** Screen (client) pixels → normalised source coordinates. */
+export function clientToSource(x: number, y: number, mapping: ViewportMapping): Point {
+  const { scale, left, top } = coverGeometry(mapping);
+  let sourceX = (x - left) / scale;
+  const sourceY = (y - top) / scale;
+  if (mapping.mirrored) sourceX = mapping.sourceWidth - sourceX;
+  return [clamp(sourceX / mapping.sourceWidth), clamp(sourceY / mapping.sourceHeight)];
+}
+
+/** Normalised source coordinates → screen (client) pixels. */
+export function sourceToClient(point: Point, mapping: ViewportMapping): readonly [number, number] {
+  const { scale, left, top } = coverGeometry(mapping);
+  const sourceX = mapping.mirrored ? mapping.sourceWidth - point[0] * mapping.sourceWidth : point[0] * mapping.sourceWidth;
+  return [left + sourceX * scale, top + point[1] * mapping.sourceHeight * scale];
+}
+
 export function loadStoredRoi(fallback: Roi): Roi {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(ROI_STORAGE_KEY) ?? "null");
@@ -12,7 +58,23 @@ export function loadStoredRoi(fallback: Roi): Roi {
 }
 
 /** Full-screen four-click calibration UI enabled only by `?roi=1`. */
-export function installRoiEditor(video: HTMLVideoElement, initial: Roi, onSave?: (roi: Roi) => void): () => void {
+export function installRoiEditor(
+  video: HTMLVideoElement,
+  initial: Roi,
+  onSave?: (roi: Roi) => void,
+  mirrored = true,
+): () => void {
+  const mapping = (): ViewportMapping => {
+    const rect = video.getBoundingClientRect();
+    return {
+      rect,
+      // Before loadedmetadata the frame size is unknown; fall back to the
+      // element box so the overlay stays usable instead of dividing by zero.
+      sourceWidth: video.videoWidth || rect.width || 1,
+      sourceHeight: video.videoHeight || rect.height || 1,
+      mirrored,
+    };
+  };
   const root = document.createElement("div");
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-label", "Detection region editor");
@@ -40,16 +102,18 @@ export function installRoiEditor(video: HTMLVideoElement, initial: Roi, onSave?:
     const context = canvas.getContext("2d")!;
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (points.length) {
+      const view = mapping();
+      const screen = points.map((point) => sourceToClient(point, view));
       context.beginPath();
-      points.forEach(([x, y], index) => index ? context.lineTo(x * canvas.width, y * canvas.height) : context.moveTo(x * canvas.width, y * canvas.height));
+      screen.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
       if (points.length === 4) context.closePath();
       context.fillStyle = "rgba(0,180,255,.22)";
       context.fill();
       context.strokeStyle = "#00d8ff";
       context.lineWidth = 4;
       context.stroke();
-      for (const [x, y] of points) {
-        context.beginPath(); context.arc(x * canvas.width, y * canvas.height, 8, 0, Math.PI * 2); context.fillStyle = "white"; context.fill();
+      for (const [x, y] of screen) {
+        context.beginPath(); context.arc(x, y, 8, 0, Math.PI * 2); context.fillStyle = "white"; context.fill();
       }
     }
     instruction.textContent = points.length < 4 ? `Click corner ${points.length + 1} of 4, walking around the standing zone.` : "Region ready. Redraw if the blue shape crosses itself, then save and copy.";
@@ -59,7 +123,7 @@ export function installRoiEditor(video: HTMLVideoElement, initial: Roi, onSave?:
   };
   const click = (event: MouseEvent) => {
     if (points.length === 4) points = [];
-    points.push([clamp(event.clientX / canvas.width), clamp(event.clientY / canvas.height)]);
+    points.push(clientToSource(event.clientX, event.clientY, mapping()));
     draw();
   };
   const persist = () => {

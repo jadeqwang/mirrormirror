@@ -27,6 +27,16 @@ const server = createServer(async (request, response) => {
       await sendWebResponse(response, result); return;
     }
     if (request.method !== "GET" && request.method !== "HEAD") { json(response, 405, { error: "method_not_allowed" }); return; }
+    if (url.pathname === "/config.json") {
+      await serveStatic(config.rootDir, "config.json", response, "config.example.json"); return;
+    }
+    if (url.pathname === "/config.example.json") {
+      await serveStatic(config.rootDir, "config.example.json", response); return;
+    }
+    if (url.pathname === "/content" || url.pathname.startsWith("/content/")) {
+      const contentPath = url.pathname.slice("/content".length) || "/";
+      await serveStatic(`${config.rootDir}/content`, contentPath, response); return;
+    }
     await serveStatic(config.staticDir, url.pathname, response);
   } catch (error) {
     console.error("request failed", error instanceof Error ? error.message : "unknown error");

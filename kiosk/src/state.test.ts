@@ -45,6 +45,25 @@ test("SPENT requires one uninterrupted empty interval", async () => {
   machine.setOccupied(false); clock.tick(4499); assert.equal(machine.state, "SPENT"); clock.tick(1); assert.equal(machine.state, "EMPTY");
 });
 
+test("a rejected generation performs the supplied fallback", async () => {
+  const clock = new Clock(); let ready = "";
+  const machine = new PerformanceStateMachine({ settleMs: 1, generate: async () => { throw new Error("network down"); }, fallback: () => "offline", onReady: (value) => ready = value, emit: () => {}, setTimer: clock.set, clearTimer: clock.clear });
+  machine.setOccupied(true); await turn(); clock.tick(1); await turn();
+  assert.equal(machine.state, "PERFORMING");
+  assert.equal(ready, "offline");
+});
+
+test("a rejected generation with no fallback leaves SPENT, not stranded in ARMED", async () => {
+  const clock = new Clock(); const events: ConductorEvent[] = [];
+  const machine = new PerformanceStateMachine({ settleMs: 1, spentEmptyMs: 4500, generate: async () => { throw new Error("network down"); }, onReady: () => {}, emit: (event) => events.push(event), setTimer: clock.set, clearTimer: clock.clear });
+  machine.setOccupied(true); await turn();
+  assert.equal(machine.state, "SPENT");
+  assert.deepEqual(events.at(-2), { type: "abort" });
+  // And the zone still recovers on its own once the visitor leaves.
+  machine.setOccupied(false); clock.tick(4500);
+  assert.equal(machine.state, "EMPTY");
+});
+
 test("attendant key rearms an occupied zone and repeat is ignored", async () => {
   const clock = new Clock(); let calls = 0;
   const machine = new PerformanceStateMachine({ settleMs: 1, generate: async () => { calls += 1; return "ok"; }, onReady: () => {}, emit: () => {}, setTimer: clock.set, clearTimer: clock.clear });

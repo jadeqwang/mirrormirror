@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import process from "node:process";
 
@@ -12,6 +12,11 @@ const urls = ["praise", "roast"].map(
 );
 
 const viteBin = new URL("../node_modules/vite/bin/vite.js", import.meta.url).pathname;
+const serverEntry = new URL("../server/index.ts", import.meta.url).pathname;
+const api = spawn(process.execPath, ["--experimental-strip-types", serverEntry], {
+  env: { ...process.env, MOCK_GENERATION: "1", HOST: "127.0.0.1", PORT: "4173", STATIC_DIR: "kiosk" },
+  stdio: ["ignore", "inherit", "inherit"],
+});
 const vite = spawn(process.execPath, [viteBin, "--host", host, "--port", String(port), "kiosk"], {
   env: { ...process.env, MOCK_CAMERA: "1", MOCK_GENERATION: "1" },
   stdio: ["ignore", "pipe", "inherit"],
@@ -27,11 +32,23 @@ vite.stdout.on("data", (chunk) => {
   }
 });
 
+let shuttingDown = false;
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => vite.kill(signal));
+  process.on(signal, () => {
+    shuttingDown = true;
+    vite.kill(signal);
+    api.kill(signal);
+  });
 }
 
-await once(vite, "exit");
+const [name, code] = await Promise.race([
+  once(vite, "exit").then(([exitCode]) => ["Vite", exitCode]),
+  once(api, "exit").then(([exitCode]) => ["mock API", exitCode]),
+]);
+vite.kill("SIGTERM");
+api.kill("SIGTERM");
+if (code !== null && code !== 0) process.exitCode = code;
+if (!shuttingDown && name === "mock API") console.error("Mock API exited before the dev server");
 
 function openWindows(targets) {
   const browser = process.env.BROWSER ?? findBrowser();
@@ -55,8 +72,6 @@ function findBrowser() {
 }
 
 function commandExists(command) {
-  const result = spawn(command, ["--version"], { stdio: "ignore" });
-  result.on("error", () => {});
-  // spawn() is asynchronous; known browser names are cheap to optimistically try.
-  return command === "google-chrome" || command === "chromium" || command === "chromium-browser";
+  const result = spawnSync(command, ["--version"], { stdio: "ignore" });
+  return result.error === undefined;
 }

@@ -60,9 +60,25 @@ async function resolveCameraDeviceId(selector: string): Promise<string> {
     throw new Error("Camera selector is empty; configure a deviceId or label serial/path");
   }
 
-  const devices = (await navigator.mediaDevices.enumerateDevices()).filter(
+  let devices = (await navigator.mediaDevices.enumerateDevices()).filter(
     (device) => device.kind === "videoinput",
   );
+
+  // Labels are blank on a fresh Chromium profile until permission has been
+  // granted, and a by-path/serial selector can only match against a label.
+  // Open and immediately release a throwaway stream to unlock them.
+  //
+  // Only when they are actually missing: both kiosk windows boot at once, and
+  // an unconditional `video: true` has them racing for the same default device,
+  // which V4L2 can refuse. Once the profile has been granted, labels persist and
+  // this is skipped entirely.
+  if (devices.some((device) => !device.label)) {
+    const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+    permissionStream.getTracks().forEach((track) => track.stop());
+    devices = (await navigator.mediaDevices.enumerateDevices()).filter(
+      (device) => device.kind === "videoinput",
+    );
+  }
   const wanted = normalize(selector);
   const exact = devices.find((device) => device.deviceId === selector);
   if (exact) return exact.deviceId;

@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { resolve } from "node:path";
 
 export interface ServerConfig {
+  rootDir: string;
   host: string;
   port: number;
   model: string;
@@ -22,6 +23,7 @@ export async function loadServerConfig(env: NodeJS.ProcessEnv = process.env): Pr
     throw new Error("OPENAI_API_KEY is required unless MOCK_GENERATION=1");
   }
   const config: ServerConfig = {
+    rootDir: root,
     host: env.HOST?.trim() || "127.0.0.1",
     port: integer(env.PORT, 4173, 1, 65535),
     model: env.GENERATION_MODEL?.trim() || "gpt-4.1-mini",

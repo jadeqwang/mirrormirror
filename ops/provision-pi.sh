@@ -13,7 +13,7 @@ cp -a "$SOURCE_ROOT/." "$INSTALL_ROOT/"
 cd "$INSTALL_ROOT"
 npm ci
 npm run build
-npx vite build --config server/vite.config.ts
+npm run build:server
 chown -R mirrormirror:mirrormirror "$INSTALL_ROOT" /var/lib/mirrormirror
 install -m 0644 ops/systemd/mirrormirror-server.service ops/systemd/mirrormirror-kiosk.service /etc/systemd/system/
 install -m 0755 ops/launch-chromium.sh "$INSTALL_ROOT/ops/launch-chromium.sh"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -eu
 
 KIOSK_URL=${KIOSK_URL:-http://127.0.0.1:4173}
@@ -26,4 +26,4 @@ roast_pid=$!
 
 # If either browser dies, terminate its peer. systemd then relaunches both cleanly.
 wait -n "$praise_pid" "$roast_pid"
-exit 1
+exit 0

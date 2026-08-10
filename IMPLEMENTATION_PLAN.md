@@ -293,7 +293,15 @@ Every lane built to its contract and stopped at its boundary, so no one closed t
 
 That split follows directly from what the review found. Codex's code quality was not the problem — the gate parser, the occupancy model, and the state machine are all good. The problem was that nine agents each built to a contract and stopped at its edge, so nobody owned the joins. **Integration must not be re-partitioned into lanes.** One owner holds the whole picture or the same gap reappears one level up.
 
-### 6.1 Codex — bounded fixes, parallel-safe
+### 6.1 Codex — bounded fixes, parallel-safe — ✅ all eight landed, reviewed 2026-08-09
+
+Verified independently rather than from the summary: typecheck clean over all 26 kiosk files (nothing excluded to make it pass), 51 tests green, both builds pass, `dist/eval/` absent while the mock clips still publish, and both shell scripts parse. Against a running server: `/content/offline-pool.json` returns all 40 conversations, `/config.json` falls back to the example, `/content/%2e%2e%2f…` is refused with 403, and a mock generation round-trips four alternating beats. The skip fixture returns `source: "offline"` with no sentinel text in the response — the §4 safety path holds end to end through real HTTP, not just in unit tests.
+
+**One amendment made during review.** The camera-label unlock opened a throwaway `getUserMedia({video: true})` unconditionally. Both kiosk windows boot simultaneously, so both would have raced for the same default device, which V4L2 can refuse — turning a first-run convenience into a boot failure on the Pi. It now runs only when labels are actually missing, which is the first run and never again.
+
+**Nit, not fixed:** `/content/*` serves the whole directory, so `writer-prompt.md` is fetchable. The server binds to loopback so this is local-only, but an allowlist of the three JSON files the kiosk actually needs would be tighter.
+
+
 
 Independent of each other and of §6.2, with one exception: **do the typecheck task first**, because integration is about to exercise every module seam and type errors there are currently invisible.
 
@@ -331,10 +339,16 @@ export const DEFAULT_KIOSK_CONFIG: KioskConfig;
 
 Ordered. Items 1–2 are the critical path; 6.1#1 and 6.1#2 should land first.
 
-1. **`kiosk/src/bus.ts`** — write the §2.3 contract as one typed module and make it the only definition. Today `ConductorEvent` lives in `state.ts` and a bare channel factory lives in `present/index.ts`; both get migrated. This is a frozen contract, so whoever writes it fixes the shape everything binds to — it goes first.
-2. **Integration in `main.ts`** — conductor/follower split by role, detection feeding the state machine, the state machine calling the generation client, the presentation layer rendering the envelope, the pre-roll pool loaded from `content/`, `installVideoStallWatchdog` actually installed, and `Presentation` completion driving `stateMachine.complete()`. The one task that must not be subdivided.
-3. **ROI editor coordinate mapping** (§5.2 #1) — map click position through the mirror transform and `object-fit: cover` into source-pixel space. Subtle, and expensive to get wrong on site.
-4. **Generation-failure fallback** (§5.2 #4) — a rejected call must not strand the machine in ARMED. Decide whether the fallback belongs in the client or the conductor; it touches spec §8's "a blank screen is the only failure a visitor can perceive".
+1. ✅ **`kiosk/src/bus.ts`** — the §2.3 contract now has one definition. `state.ts` and `present/types.ts` import it and keep their original names (`ConductorEvent`, `PresentationEvent`) as aliases. Adds an `isBusEvent` guard, because a follower that reloads mid-performance rejoins a live channel.
+2. ✅ **Integration in `main.ts`** — conductor/follower split by role, detection feeding the state machine, the state machine calling the generation client, presentation rendering the envelope, pre-roll and offline pools loaded from `content/`, the watchdog installed, and `Presentation` completion driving `stateMachine.complete()`. The production bundle went from 6 modules to 19. `kiosk/src/integration.test.ts` exercises the whole graph: occupancy → generation → four beats alternating across two windows → SPENT, plus the failed-generation and visitor-leaves paths.
+3. ✅ **ROI editor coordinate mapping** (§5.2 #1) — `clientToSource` / `sourceToClient` undo the mirror and `object-fit: cover`, exported as pure functions with tests, including the case that was silently wrong (a click on screen-left is source-right).
+4. ✅ **Generation-failure fallback** (§5.2 #4) — the state machine takes an optional `fallback`; `main.ts` supplies the offline pool. With no fallback it now lands in SPENT rather than stranding in ARMED, so a still-occupied zone cannot retry in a tight loop.
+
+**Found while integrating — not yet fixed:**
+
+- **No timeout on `beat_done`.** If the roast window is closed or crashed, the conductor waits forever partway through a performance. It recovers when the visitor leaves (abort fires), so it is not fatal, but a follower-liveness timeout that finishes the sequence on the praise screen alone would match §8 better.
+- **A saved ROI needs a page reload.** `installRoiEditor` persists to `localStorage`, but `VideoOccupancyDetector` exposes no `setRoi` passthrough, so the running detector keeps the old region. Fine if the on-site procedure says "save, then reload"; worth wiring properly before week 3.
+- **`kiosk/src/watchdog.ts`** — moved out of `server/`, where it was browser code the server never imported.
 5. **Provider implementation + live ordering check** — once §6.3 decides. The check matters more than the implementation: confirm against the real endpoint that JSON properties actually arrive in schema order, because `parseGateBeforeBeats` throws if they don't, and a permanent drift means no generated performance ever renders.
 6. **Prompt placement** — reconcile the user-turn text block in `model.ts` with `content/README.md`'s claim that it is a system prompt.
 7. **Lane G eval run and scoring**, once photographs exist.

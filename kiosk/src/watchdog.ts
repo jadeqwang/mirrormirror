@@ -1,6 +1,10 @@
 /**
- * Additive kiosk reliability hook. Lane A can call this after creating its
- * primary video. It reloads only when playback time has not advanced for 5s.
+ * Moved out of `server/` — this is browser code and the server never imported it.
+ *
+ * Spec §8: a blank screen is the only failure a visitor can perceive, so a
+ * silently stalled camera is the worst outcome the kiosk has. Reload only when
+ * playback time has genuinely stopped advancing, never on a paused or
+ * not-yet-ready element.
  */
 export function installVideoStallWatchdog(video: HTMLVideoElement, stallMs = 5_000): () => void {
   let lastTime = video.currentTime;

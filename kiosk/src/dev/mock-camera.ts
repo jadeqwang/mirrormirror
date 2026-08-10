@@ -1,9 +1,9 @@
 export type MockCameraScene = "empty-room" | "one-person" | "three-people";
 
 const SCENES: Record<MockCameraScene, string> = {
-  "empty-room": "/video/empty-room.webm",
-  "one-person": "/video/one-person.webm",
-  "three-people": "/video/three-people.webm",
+  "empty-room": "/empty-room.webm",
+  "one-person": "/one-person.webm",
+  "three-people": "/three-people.webm",
 };
 
 export function mockCameraEnabled(search = globalThis.location?.search ?? ""): boolean {

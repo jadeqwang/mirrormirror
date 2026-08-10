@@ -1,0 +1,8 @@
+{
+  "cameras": { "praise": "<by-path or serial>", "roast": "<by-path or serial>" },
+  "video": { "width": 1280, "height": 720, "fps": 24 },
+  "grade": { "saturate": 1.15, "contrast": 1.05, "brightness": 1.05, "sepia": 0.12, "vignette": 0.35, "bloom": 0.25, "softfocus": 0.3 },
+  "detection": { "roi": [[0.2, 0.15], [0.8, 0.15], [0.95, 0.95], [0.05, 0.95]], "sample_fps": 4, "enter_frames": 4, "exit_frames": 8, "threshold": 0.08 },
+  "timing": { "settle_ms": 1500, "spent_empty_ms": 4500, "char_ms": 35, "beat_gap_ms": 900, "generation_timeout_ms": 6000 },
+  "rearm_key": "F9"
+}

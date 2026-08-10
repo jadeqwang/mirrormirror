@@ -1,17 +1,21 @@
-export type PerformanceState = "EMPTY" | "ARMED" | "PERFORMING" | "SPENT";
+import type { BusEvent, PerformanceState } from "./bus";
 
-export type ConductorEvent =
-  | { type: "state"; state: PerformanceState }
-  | { type: "beat"; index: 0 | 1 | 2 | 3; screen: "praise" | "roast"; text: string }
-  | { type: "beat_done"; index: number }
-  | { type: "abort" }
-  | { type: "reset" };
+export type { BusEvent, PerformanceState } from "./bus";
+
+/** Lane B's original name for the §2.3 event union, now defined once in bus.ts. */
+export type ConductorEvent = BusEvent;
 
 export interface StateMachineOptions<T> {
   settleMs?: number;
   spentEmptyMs?: number;
   rearmKey?: string;
   generate: () => Promise<T>;
+  /**
+   * Last resort when `generate` rejects. Lane C's client resolves with an
+   * offline conversation rather than rejecting, but the conductor must not
+   * depend on that — see the rejection path in `#arm`.
+   */
+  fallback?: () => T | undefined;
   onReady: (result: T) => void;
   emit: (event: ConductorEvent) => void;
   freezeDetection?: (frozen: boolean) => void;
@@ -87,8 +91,20 @@ export class PerformanceStateMachine<T> {
       this.#result = result;
       this.#tryPerform();
     }).catch(() => {
-      // Lane C promises an offline fallback; a rejected custom client remains ARMED
-      // until occupancy clears or the attendant rearms rather than performing garbage.
+      if (generation !== this.#generation || this.#state !== "ARMED") return;
+      const fallback = this.#options.fallback?.();
+      if (fallback !== undefined) {
+        this.#result = fallback;
+        this.#tryPerform();
+        return;
+      }
+      // Nothing at all to show. Do not sit in ARMED with only the pre-roll on
+      // screen until the visitor gives up — spec §8 makes a blank screen the one
+      // failure they can perceive. Go SPENT rather than EMPTY so a still-occupied
+      // zone cannot immediately re-arm and retry in a tight loop.
+      this.#options.emit({ type: "abort" });
+      this.#transition("SPENT");
+      if (!this.#occupied) this.#startSpentTimer();
     });
     this.#settleTimer = this.#setTimer(() => {
       this.#settleTimer = undefined;

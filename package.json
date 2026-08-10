@@ -4,12 +4,15 @@
   "type": "module",
   "scripts": {
     "build": "vite build kiosk --config kiosk/vite.config.ts",
+    "build:server": "vite build --config server/vite.config.ts",
     "dev": "node dev-harness/open-two-windows.mjs",
     "dev:server": "vite --host 127.0.0.1 kiosk",
     "fixtures:video": "node dev-harness/generate-video-fixtures.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.kiosk.json && tsc -p tsconfig.server.json"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "typescript": "^5.9.2",
     "vite": "^7.1.1"
   }
