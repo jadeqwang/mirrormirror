@@ -11,6 +11,8 @@ export interface ProviderOptions {
   prompt: string;
   timeoutMs: number;
   maxTokens: number;
+  /** Kimi reasons by default; see the request body for why this is off. */
+  thinking: boolean;
 }
 
 /**
@@ -51,6 +53,12 @@ export function createProviderGenerator(options: ProviderOptions): GenerateStruc
           type: "json_schema",
           json_schema: { name: "mirror_mirror_generation", strict: true, schema: call.schema },
         },
+        // Kimi reasons by default, and with thinking on it puts everything in
+        // `reasoning_content` and returns `content: ""` — which the gate parser
+        // correctly rejects as "not an object". It also costs 13–26s against a
+        // 5.5s budget. Off, the same model answers in ~2–3.5s with a real JSON
+        // object. Set CF_THINKING=on to measure it again.
+        ...(options.thinking ? {} : { chat_template_kwargs: { thinking: false } }),
       }),
       signal: AbortSignal.timeout(options.timeoutMs),
     });

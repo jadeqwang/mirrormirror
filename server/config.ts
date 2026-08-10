@@ -14,6 +14,7 @@ export interface ServerConfig {
   apiUrl: string;
   apiKey: string;
   maxTokens: number;
+  thinking: boolean;
   staticDir: string;
   promptPath: string;
   denylistPath: string;
@@ -49,6 +50,7 @@ export async function loadServerConfig(env: NodeJS.ProcessEnv = process.env): Pr
     apiUrl,
     apiKey,
     maxTokens: integer(env.GENERATION_MAX_TOKENS, 1_200, 256, 32_000),
+    thinking: env.CF_THINKING?.trim().toLowerCase() === "on",
     staticDir: resolve(root, env.STATIC_DIR?.trim() || "kiosk/dist"),
     promptPath: resolve(root, env.WRITER_PROMPT_PATH?.trim() || "content/writer-prompt.md"),
     denylistPath: resolve(root, env.DENYLIST_PATH?.trim() || "content/denylist.json"),

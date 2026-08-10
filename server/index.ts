@@ -19,6 +19,7 @@ const provider = createProviderGenerator({
   // generation surfaces as a timeout rather than a hung socket.
   timeoutMs: Math.max(500, config.generationTimeoutMs - 100),
   maxTokens: config.maxTokens,
+  thinking: config.thinking,
 });
 
 const server = createServer(async (request, response) => {

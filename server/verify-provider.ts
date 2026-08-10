@@ -122,6 +122,7 @@ async function attempt(
           type: "json_schema",
           json_schema: { name: "mirror_mirror_generation", strict, schema: ORDERED_GENERATION_SCHEMA },
         },
+        ...(config.thinking ? {} : { chat_template_kwargs: { thinking: false } }),
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -188,7 +189,17 @@ function report(attempts: Attempt[], timeoutMs: number): void {
   console.log(`latency median ${median}ms, worst ${worst}ms (server gives up at ${timeoutMs}ms)`);
 
   const problems: string[] = [];
-  if (ordered.length !== attempts.length) {
+  const alphabetical = attempts.some((a) => a.order && a.order.length > 1
+    && a.order.join() === [...a.order].sort().join()
+    && a.order.join() !== EXPECTED_ORDER.join());
+  if (alphabetical) {
+    problems.push(
+      "The provider is returning keys in ALPHABETICAL order, not schema order. That is not\n" +
+      "  intermittent and no amount of prompting fixes it — `beats` sorts before `skip`, so the\n" +
+      "  gate can never precede the beats here. This needs a decision, not a retry: see\n" +
+      "  IMPLEMENTATION_PLAN.md §5.1.",
+    );
+  } else if (ordered.length !== attempts.length) {
     problems.push(
       "Property order is not stable. The gate parser rejects out-of-order output and the server\n" +
       "  substitutes a canned conversation, so this fails safe — but if it happens often the piece\n" +
