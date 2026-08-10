@@ -61,9 +61,11 @@ npm run verify:provider -- path/to/a/photo.jpg
 
 `.env` is gitignored, and everything that needs credentials loads it automatically
 through Node's `--env-file-if-exists` — nothing to export, nothing to remember per
-shell. Create the token at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
-scoped to **Account · Workers AI · Read** and nothing else, with an expiry a little
-past the show. Never the Global API Key: the Pi is a physical device in a public room.
+shell. Get both values from the dashboard under **AI → Workers AI → Use REST API**:
+it shows the Account ID and offers **Create a Workers AI API Token**, prefilled with
+the right permissions. A hand-rolled token needs **both** Workers AI *Read* and
+*Edit* — inference counts as Edit. Give it an expiry past the show, and never use the
+Global API Key: the Pi is a physical device in a public room.
 
 Three things keep it out of git, in increasing order of reliability: `.gitignore`, a
 `pre-commit` hook installed automatically by `npm install` (bypass with `--no-verify`),
