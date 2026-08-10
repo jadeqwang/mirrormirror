@@ -11,13 +11,13 @@ You are given one photograph: a single frame from the praise screen's camera, ta
 
 Your response has five fields, read in this order:
 
-1. `people` — who is in the frame, described safely
-2. `group_size` — how many people are in the frame
+1. `group_size` — how many people are in the frame
+2. `people` — who is in the frame, described safely
 3. `skip` — whether this performance should run at all
 4. `skip_reason` — a short phrase, or null
-5. `beats` — the four lines of dialogue
+5. `speech` — the four lines of dialogue
 
-The order is not cosmetic. The application reads `skip` before it reads `beats`, and when `skip` is true the beats are thrown away without ever being parsed. Decide whether to run before you decide what to say.
+The order is not cosmetic. The application reads `skip` before it reads `speech`, and when `skip` is true the lines are thrown away without ever being parsed. Decide whether to run before you decide what to say.
 
 # Step one: should this run at all?
 
@@ -59,7 +59,7 @@ Nobody in the room misses what just happened. The piece stops looking tactless a
 
 Skipping is not a failure and it costs nothing. The installation has a fallback conversation ready and the visitor sees no gap at all. A skipped performance is a correct performance.
 
-**When `skip` is true, emit exactly these four beats and nothing else** — they are discarded unread, and no observation about that visitor should exist anywhere:
+**When `skip` is true, put exactly these four lines in `speech` and nothing else** — they are discarded unread, and no observation about that visitor should exist anywhere:
 
 ```json
 [{"screen":"praise","text":"skipped"},{"screen":"roast","text":"skipped"},{"screen":"praise","text":"skipped"},{"screen":"roast","text":"skipped"}]
@@ -80,7 +80,7 @@ For each person:
 
 When the screens refer to the visitor in the third person while talking to each other, use **they/them** or repeat the descriptor. Never a gendered pronoun or noun.
 
-# Step three: the four beats
+# Step three: the four lines of `speech`
 
 Four lines of dialogue, alternating strictly between the two screens. One types while the other holds; they never speak at once.
 

@@ -18,11 +18,11 @@ const offline = [{ beats: beats.map((beat) => ({ ...beat, text: `Offline: ${beat
 
 function raw(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({
-    people: [{ descriptor: "the one in blue", palette: "blue", formality: "casual", coherence: "high" }],
     group_size: 1,
+    people: [{ coherence: "high", descriptor: "the one in blue", formality: "casual", palette: "blue" }],
     skip: false,
     skip_reason: null,
-    beats,
+    speech: beats,
     ...overrides,
   });
 }
@@ -34,10 +34,20 @@ function request(): Request {
   return new Request("http://localhost/generate", { method: "POST", body: form });
 }
 
-test("ordered schema keeps all gate fields before beats", () => {
+test("ordered schema keeps all gate fields before the lines", () => {
   assert.deepEqual(Object.keys(ORDERED_GENERATION_SCHEMA.properties), [
-    "people", "group_size", "skip", "skip_reason", "beats",
+    "group_size", "people", "skip", "skip_reason", "speech",
   ]);
+});
+
+test("schema order survives a provider that sorts keys alphabetically", () => {
+  // Workers AI does exactly this, which is why `speech` is not called `beats`.
+  const keys = Object.keys(ORDERED_GENERATION_SCHEMA.properties);
+  assert.deepEqual([...keys].sort(), keys, "gate fields must still sort before the lines");
+  assert.equal(keys.at(-1), "speech");
+  for (const person of [Object.keys(ORDERED_GENERATION_SCHEMA.properties.speech.items.properties)]) {
+    assert.deepEqual([...person].sort(), person);
+  }
 });
 
 test("skip branch never parses malformed beat text", () => {
@@ -47,14 +57,14 @@ test("skip branch never parses malformed beat text", () => {
 });
 
 test("out-of-order gate fields are rejected", () => {
-  const outOfOrder = JSON.stringify({ group_size: 1, people: [], skip: true, skip_reason: "unsafe", beats });
+  const outOfOrder = JSON.stringify({ speech: beats, group_size: 1, people: [], skip: true, skip_reason: "unsafe" });
   assert.throws(() => parseGateBeforeBeats(outOfOrder), /safety order/);
 });
 
 test("server substitutes offline beats on model gate without leaking generated beats", async () => {
   const reasons: string[] = [];
   const handler = createGenerationHandler({
-    generateStructured: async () => raw({ skip: true, skip_reason: "medical_device", beats: [{ screen: "roast", text: "NEVER LEAK" }] }),
+    generateStructured: async () => raw({ skip: true, skip_reason: "medical_device", speech: [{ screen: "roast", text: "NEVER LEAK" }] }),
     offlinePool: offline,
     denylist: [],
     logSkip: (reason) => reasons.push(reason),
@@ -68,7 +78,7 @@ test("server substitutes offline beats on model gate without leaking generated b
 
 test("deny-list hit is converted to an offline response", async () => {
   const handler = createGenerationHandler({
-    generateStructured: async () => raw({ beats: beats.map((beat, index) => index === 2 ? { ...beat, text: "A forbidden wheelchair allusion" } : beat) }),
+    generateStructured: async () => raw({ speech: beats.map((beat, index) => index === 2 ? { ...beat, text: "A forbidden wheelchair allusion" } : beat) }),
     offlinePool: offline,
     denylist: compileDenylist(["\\bwheelchairs?\\b"]),
   });

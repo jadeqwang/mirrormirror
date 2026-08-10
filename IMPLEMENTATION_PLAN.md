@@ -6,17 +6,19 @@
 
 ---
 
-## Status — provider measured 2026-08-10
+## Status — provider working 2026-08-10
 
 Lanes A–F were built by Codex and reviewed; the seams were then closed and the bounded fixes landed (§6). **The loop now closes in software.** A trigger runs detection → state machine → one generation call → four beats alternating across two windows → SPENT, and `kiosk/src/integration.test.ts` covers that path plus the failed-generation and visitor-leaves branches. The production bundle went from 6 modules to 19 with the detection worker code-split.
 
-The provider is now wired and, as of 2026-08-10, **actually called** — which turned up one blocker that is not a matter of taste or tuning. Workers AI returns JSON object keys in **alphabetical order**, so `beats` always precedes `skip` and the gate can never come first under the current field names. It fails safe (canned conversation, nothing leaks) but it fails on *every* call, so the piece would run all day without once talking about the visitor. A one-word schema rename fixes it and is demonstrated working; it needs a decision because it touches a frozen contract. See §5.1.
+The provider is wired, called, and **working**: 5/5 usable, 5/5 in gate order, 3.2s median. Getting there took two fixes. Kimi reasons by default and with thinking on returns empty `content` after 13–26s, so thinking is now disabled. And Workers AI returns JSON keys **alphabetically** regardless of schema order, which meant `beats` always preceded `skip` and the gate could never come first — so the model-facing field is now `speech`, and the schema is written in the order `group_size, people, skip, skip_reason, speech`, which is both gate order and alphabetical order. The kiosk-facing envelope still says `beats`; nothing in the kiosk changed.
+
+What is left is the writing and the hardware: **the prompt has still never seen a photograph**, the eval set has no images, and nothing has run on a Pi.
 
 | Lane | Status | Summary |
 | --- | --- | --- |
 | A. Kiosk shell + video | ✅ Built, unverified on hardware | Cameras pinned by deviceId/label with no enumeration fallback, both feeds mirrored, praise grade complete and photographic-only, debug overlay live. MJPEG can't be forced from the browser — needs `v4l2-ctl` verification on the Pi. |
 | B. Detection + state machine | ✅ Built and wired | Model is spec-exact (160×120, running-average background, ROI mask, hysteresis both edges, freeze during PERFORMING). Detection now drives the machine. ROI coordinate mapping fixed and tested. |
-| C. Generation + safety gate | 🚧 Wired and measured; **blocked on a schema decision** | Safety path proven end to end through real HTTP; frame stays in memory. Kimi answers in ~3.2s with thinking disabled. But Workers AI sorts keys alphabetically, so gate-before-beats cannot hold as named — §5.1 has the fix and the alternatives. |
+| C. Generation + safety gate | ✅ Working against the live model | 5/5 in gate order at 3.2s median. Safety path proven end to end through real HTTP: a model-shaped skip yields a corpus conversation with no model text in the response. Frame stays in memory. **Vision still unexercised** — every call so far has been text-only. |
 | D. Presentation | ✅ Built and wired | Typewriter, strict alternation via a `beat_done` handshake, accumulate at 40%, abort fade, pre-roll painted synchronously on ARMED and loaded from `content/`. |
 | E. Server + reliability | ✅ Built; bring-up bugs fixed | systemd units with `Restart=always` and real hardening, provisioning, ops README covering the spec's hardware gotchas. Now serves `/content` and `/config.json`; the dash shebang that would have restart-looped on the Pi is fixed. |
 | F. Dev harness | ✅ Dev loop runs | Mock cameras and clips, mock generation cases, conformance suites. `npm run dev` now starts the API alongside Vite and proxies `/generate`, so the whole loop runs on a laptop. |
@@ -68,7 +70,7 @@ Runs in the praise (conductor) window only.
 - Emits events on the contract in §2.3. Does **not** render anything and does **not** call the network directly — it asks lane C's client.
 - No second `getUserMedia`, no face detection, no extra processes (spec §6 is explicit).
 
-### C. Generation client + safety gating **[deep — safety-critical parsing order]** — 🚧 measured; blocked on §5.1
+### C. Generation client + safety gating **[deep — safety-critical parsing order]** — ✅ working; vision untested
 The kiosk-side client and server-side endpoint for the ONE call.
 
 > **Status:** delivered in `server/{generate,model,mock-model}.ts` and `kiosk/src/gen-client.ts`. The safety property holds and is tested: `parseGateBeforeBeats` scans top-level fields in schema order, rejects reordered output, and returns on the skip branch *before* `beats` is parsed. Skipped beats never leave the server; the deny-list runs before the response; the frame lives only in a local buffer and is never written or logged. The kiosk client verifies the envelope again and falls back locally.
@@ -82,7 +84,7 @@ The kiosk-side client and server-side endpoint for the ONE call.
 > | Thinking mode is fatal by default | Kimi reasons unless told not to. With it on, output lands in `reasoning_content`, `content` is `""`, and the gate parser correctly rejects it — 13–26s per call, 0/5 usable. `chat_template_kwargs.thinking=false` is now sent by default; `CF_THINKING=on` restores it. |
 > | Latency, thinking off | k2.7-code 2.4–3.7s (median 3.2s); k2.6 ~2.0s. Both inside the 5.5s server budget, neither measured **with an image yet**. |
 > | Keys come back alphabetical | Top level returned `beats, group_size, people, skip, skip_reason`; nested person keys returned `coherence, descriptor, formality, palette`. Both exactly sorted, 5/5 runs. Deterministic, not drift — no prompt fixes it. |
-> | The rename works | With `beats` renamed to `speech` and the schema written in the resulting sorted order, keys come back `group_size, people, skip, skip_reason, speech` — gate before lines, 3/3. |
+> | The rename works, and is now applied | `beats` is `speech` in the model-facing schema, written in the order `group_size, people, skip, skip_reason, speech`. Re-verified after the change: **5/5 in gate order, 3.2s median**. The kiosk-facing envelope is untouched — the server maps the field when building the response. |
 > | Vision | **Never exercised.** Every call so far used the text-only `--no-image` probe. One photograph settles it. |
 > | Skip path | Verified: a model-shaped skip yields a corpus conversation, `source: "offline"`, no model text in the response. |
 
@@ -152,7 +154,7 @@ These are the seams between lanes. They're deliberately boring. Changing one req
 
 ### 2.1 Generation envelope (server → kiosk, and model → server)
 
-> ⚠️ **Pending `[CONTRACT]` change (§5.1).** The *model-facing* schema may rename `beats` to `speech` and reorder its properties so that the provider's alphabetical key ordering coincides with gate-before-lines. The **kiosk-facing envelope below is unaffected** either way — the server maps the field when it builds the response.
+> **Note on the model-facing schema (changed 2026-08-10).** What the *model* returns is not this shape: its lines are called `speech` and its keys are ordered `group_size, people, skip, skip_reason, speech`, so that gate-before-lines holds under a provider that sorts keys alphabetically. See the comment on `ORDERED_GENERATION_SCHEMA`. **The kiosk-facing envelope below is unchanged** — the server maps `speech` to `beats` when it builds the response, so nothing in the kiosk knows or cares.
 
 Exactly the spec §4 schema. Model-side structured output enforces field order (`people`, `group_size`, `skip`, `skip_reason`, then `beats`). Server→kiosk adds one wrapper:
 
@@ -278,11 +280,9 @@ The integration gaps, all six bugs, and the project-hygiene items the 2026-08-09
 
 ### 5.1 Decisions only a human can make
 
-**The gate ordering decision — blocking.** Workers AI sorts JSON keys alphabetically, so `beats` sorts before `skip` and the gate can never precede the lines. Nothing else in lane C can be trusted until this is settled. Three ways out, in the order I would take them:
+**~~The gate ordering decision.~~ Resolved 2026-08-10 — option 1 applied.** The model-facing field `beats` is now `speech`, and `ORDERED_GENERATION_SCHEMA` is written `group_size, people, skip, skip_reason, speech` so that gate order and the provider's alphabetical order are the same sequence. Verified 5/5 against the live endpoint. Both guarantees survive: the model still commits to `skip` before writing a line, and the application still discards unread. A provider that honours schema order produces the identical sequence, so this is not Cloudflare-specific. The kiosk-facing envelope in §2.1 is unchanged.
 
-1. **Rename `beats` → `speech` and write the schema in the resulting sorted order** (`group_size, people, skip, skip_reason, speech`). Demonstrated 3/3 on the live endpoint. Preserves *both* guarantees — the model still commits to `skip` before writing a line, and the application still discards unread — because alphabetical order and gate order now coincide. Also survives Cloudflare later honouring schema order, since the two orders would be identical. Contained to `server/generate.ts`, `content/writer-prompt.md` and the model-shaped fixtures: the kiosk-facing envelope in §2.1 keeps `beats`, so no kiosk change. Cost: a field name whose reason is non-obvious, hence written down here.
-2. **Relax the parser** to find `skip` wherever it appears and still refuse to read `beats` when it is true. Smallest diff, no odd naming. But the lines are then *generated* before the gate decision, which is the property spec §4 Mitigation 1 exists to provide — and §4 says removing one of the three mitigations removes the only thing standing between the piece and a bad write-up.
-3. **Two calls, as spec v0.1.** Strongest guarantee: a blind writer cannot allude to what it cannot see. Roughly doubles latency to ~6s, past what the pre-roll was sized to cover, and v0.3 collapsed to one call deliberately.
+> Whoever touches the schema next: if you rename a field, re-sort the properties so the gate fields still sort before the lines, and re-run `npm run verify:provider`. There is a test that fails if the property order stops being its own sorted order.
 
 **Which Kimi.** `kimi-k2.7-code` is the code-tuned variant at ~3.2s; `kimi-k2.6` is the general vision model at ~2.0s. The piece wants comedy and social judgment, not agentic coding, and the faster one may also be the better writer here. A/B them on the eval set — one env var.
 
@@ -371,7 +371,7 @@ Ordered. Items 1–2 are the critical path; 6.1#1 and 6.1#2 should land first.
 - **`kiosk/src/watchdog.ts`** — moved out of `server/`, where it was browser code the server never imported.
 5. ✅ **Provider implementation + live ordering check** — Workers AI wired, credentials set up, and the endpoint actually called. The check earned its keep: it found thinking mode returning empty content at 13–26s, and the alphabetical key ordering that now blocks lane C. Findings are recorded under lane C; the decision is §5.1.
 6. ✅ **Prompt placement** — the writer prompt is a `system` message; code and `content/README.md` agree.
-7. **Apply whichever §5.1 option is chosen**, then re-run `verify:provider` with a photograph to confirm vision and with-image latency.
+7. ✅ **Applied §5.1 option 1** — schema renamed and reordered, 5/5 in gate order live. Still to do: re-run `verify:provider` **with a photograph** to confirm vision and with-image latency.
 8. **Lane G eval run and scoring**, once photographs exist and §5.1 is settled.
 9. **Lane H grade tuning pass and wall label draft** — the label is blocked on the provider's retention terms.
 

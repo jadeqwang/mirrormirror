@@ -23,7 +23,10 @@ test("malformed case is rejected by the contract validator", async () => {
 test("skip sentinel makes accidental beat forwarding observable", async () => {
   const fixture = await read("skip");
   assert.equal(fixture.skip, true);
-  assert.match(fixture.beats[0].text, /SENTINEL/);
+  // Model-shaped fixture: the lines are `speech`, and the gate fields precede
+  // them both in the schema and alphabetically. See ORDERED_GENERATION_SCHEMA.
+  assert.deepEqual(Object.keys(fixture), ["group_size", "people", "skip", "skip_reason", "speech"]);
+  assert.match(fixture.speech[0].text, /SENTINEL/);
 });
 
 function assertValidEnvelope(value) {

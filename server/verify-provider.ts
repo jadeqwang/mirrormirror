@@ -10,8 +10,8 @@ import { ORDERED_GENERATION_SCHEMA, parseGateBeforeBeats } from "./generate.ts";
  * Three assumptions, in descending order of how badly they hurt:
  *
  * 1. **Property order.** `parseGateBeforeBeats` refuses output whose top-level
- *    keys are not `people, group_size, skip, skip_reason, beats`, because the
- *    gate has to be decided before the beats are readable. Cloudflare's docs say
+ *    keys are not `group_size, people, skip, skip_reason, speech`, because the
+ *    gate has to be decided before the lines are readable. Cloudflare's docs say
  *    Workers AI "can't guarantee that the model responds according to the
  *    requested JSON Schema" and say nothing about ordering. If order drifts on
  *    every call, every performance silently falls back to a canned conversation
@@ -29,7 +29,7 @@ import { ORDERED_GENERATION_SCHEMA, parseGateBeforeBeats } from "./generate.ts";
  *   npm run verify:provider -- photo.jpg --runs=10 --no-strict
  */
 
-const EXPECTED_ORDER = ["people", "group_size", "skip", "skip_reason", "beats"];
+const EXPECTED_ORDER = ["group_size", "people", "skip", "skip_reason", "speech"];
 
 const DESCRIBED_SCENE =
   "There is no photograph attached to this request. For this test only, treat the frame as: " +
@@ -195,9 +195,9 @@ function report(attempts: Attempt[], timeoutMs: number): void {
   if (alphabetical) {
     problems.push(
       "The provider is returning keys in ALPHABETICAL order, not schema order. That is not\n" +
-      "  intermittent and no amount of prompting fixes it — `beats` sorts before `skip`, so the\n" +
-      "  gate can never precede the beats here. This needs a decision, not a retry: see\n" +
-      "  IMPLEMENTATION_PLAN.md §5.1.",
+      "  intermittent and no amount of prompting fixes it. The schema is already named so that\n" +
+      "  alphabetical order equals gate order, so this means the provider changed behaviour:\n" +
+      "  re-check ORDERED_GENERATION_SCHEMA against what came back.",
     );
   } else if (ordered.length !== attempts.length) {
     problems.push(

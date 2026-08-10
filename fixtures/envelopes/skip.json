@@ -1,9 +1,12 @@
 {
-  "people": [],
   "group_size": 1,
+  "people": [],
   "skip": true,
   "skip_reason": "mock protected-category gate",
-  "beats": [
-    { "screen": "roast", "text": "SENTINEL: skipped text must never reach the kiosk." }
+  "speech": [
+    {
+      "screen": "roast",
+      "text": "SENTINEL: skipped text must never reach the kiosk."
+    }
   ]
 }

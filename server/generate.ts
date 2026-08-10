@@ -41,32 +41,49 @@ export interface GenerationDependencies {
 }
 
 /**
- * Property insertion order is intentional. Providers that support strict JSON
- * schemas must receive this object unchanged: gate fields precede `beats`.
+ * Property insertion order is intentional and the field names are load-bearing.
+ * Gate fields must precede the lines so the model commits to `skip` before it
+ * writes anything renderable (spec §4, Mitigation 1).
+ *
+ * The lines are called `speech` rather than `beats`, and the properties are
+ * written in the order below, for one measured reason: Cloudflare Workers AI
+ * returns JSON object keys in **alphabetical** order regardless of schema order
+ * (confirmed at two nesting levels, 5/5 runs, 2026-08-10). Under the old names
+ * `beats` sorted before `skip`, so the gate could never come first and every
+ * call was rejected. `group_size < people < skip < skip_reason < speech` sorts
+ * to exactly the order the safety design needs, so alphabetical order and gate
+ * order now coincide — and a provider that honours schema order produces the
+ * same sequence, so this is not a Cloudflare-only hack.
+ *
+ * If you rename anything here, re-sort the properties so the gate fields still
+ * sort before the lines, and re-run `npm run verify:provider`.
+ *
+ * The kiosk-facing envelope is unaffected: `speech` becomes `beats` in the
+ * response the server builds (§2.1).
  */
 export const ORDERED_GENERATION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["people", "group_size", "skip", "skip_reason", "beats"],
+  required: ["group_size", "people", "skip", "skip_reason", "speech"],
   properties: {
+    group_size: { type: "integer", minimum: 0 },
     people: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["descriptor", "palette", "formality", "coherence"],
+        required: ["coherence", "descriptor", "formality", "palette"],
         properties: {
-          descriptor: { type: "string" },
-          palette: { type: "string" },
-          formality: { type: "string" },
           coherence: { type: "string" },
+          descriptor: { type: "string" },
+          formality: { type: "string" },
+          palette: { type: "string" },
         },
       },
     },
-    group_size: { type: "integer", minimum: 0 },
     skip: { type: "boolean" },
     skip_reason: { type: ["string", "null"] },
-    beats: {
+    speech: {
       type: "array",
       minItems: 4,
       maxItems: 4,
@@ -89,17 +106,18 @@ type GateResult =
 
 /**
  * Reads top-level values in schema order. Crucially, when `skip` is true the
- * beats value is never JSON-parsed, validated, logged, or returned.
+ * `speech` value is never JSON-parsed, validated, logged, or returned — the
+ * lines the model wrote about that visitor are discarded unread.
  */
 export function parseGateBeforeBeats(raw: string): GateResult {
   const fields = scanTopLevelFields(raw);
-  const expected = ["people", "group_size", "skip", "skip_reason", "beats"];
+  const expected = ["group_size", "people", "skip", "skip_reason", "speech"];
   if (fields.length !== expected.length || fields.some((field, i) => field.key !== expected[i])) {
     throw new Error("model output fields are missing or out of safety order");
   }
 
-  const peopleValue = parseJsonValue(fields[0].raw, "people");
-  const groupSizeValue = parseJsonValue(fields[1].raw, "group_size");
+  const groupSizeValue = parseJsonValue(fields[0].raw, "group_size");
+  const peopleValue = parseJsonValue(fields[1].raw, "people");
   const skipValue = parseJsonValue(fields[2].raw, "skip");
   if (typeof skipValue !== "boolean") throw new Error("skip must be boolean");
 
@@ -111,7 +129,7 @@ export function parseGateBeforeBeats(raw: string): GateResult {
 
   const skipReason = parseJsonValue(fields[3].raw, "skip_reason");
   if (skipReason !== null) throw new Error("skip_reason must be null when skip is false");
-  const beatsValue = parseJsonValue(fields[4].raw, "beats");
+  const beatsValue = parseJsonValue(fields[4].raw, "speech");
   return {
     skip: false,
     people: validatePeople(peopleValue),
