@@ -6,23 +6,25 @@
 
 ---
 
-## Status — reviewed 2026-08-09
+## Status — integration landed 2026-08-09
 
-Lanes A–F were built by Codex. The components are good: the safety-critical parsing, the detection model, and the state machine all match the spec closely and have real tests. **What has not happened is integration.** `kiosk/src/main.ts` starts the video pipeline and nothing else; detection, the state machine, the generation client, and the presentation layer are imported only by their own tests. The production bundle transforms 6 modules and weighs 7.9 kB, which is the whole story in one number.
+Lanes A–F were built by Codex and reviewed; the seams were then closed and the bounded fixes landed (§6). **The loop now closes in software.** A trigger runs detection → state machine → one generation call → four beats alternating across two windows → SPENT, and `kiosk/src/integration.test.ts` covers that path plus the failed-generation and visitor-leaves branches. The production bundle went from 6 modules to 19 with the detection worker code-split.
+
+What remains is not code-shaped. It is the three things that were always going to decide the piece: **the provider decision, the writer prompt actually being run, and the hardware.**
 
 | Lane | Status | Summary |
 | --- | --- | --- |
-| A. Kiosk shell + video | ✅ Built, unverified on hardware | Cameras pinned by deviceId/label with no enumeration fallback, both feeds mirrored, praise grade complete and photographic-only, debug overlay live. MJPEG can't be forced from the browser — documented honestly, needs `v4l2-ctl` verification on the Pi. |
-| B. Detection + state machine | ⚠️ Components done, not wired | Model is spec-exact (160×120, running-average background, ROI mask, hysteresis both edges, freeze). State machine implements every spec §6 rule. Two bugs below. Nothing calls either. |
-| C. Generation + safety gate | ⚠️ Done and tested; provider unratified | `parseGateBeforeBeats` genuinely never touches beats on skip, and there's a test proving it. Frame stays in memory. But the provider is OpenAI-shaped and nobody decided that. |
-| D. Presentation | ⚠️ Component done, not wired | Typewriter, strict alternation via a `beat_done` handshake, accumulate at 40%, abort fade, pre-roll first char painted synchronously. Doesn't load the pre-roll pool from disk. Nothing calls it. |
-| E. Server + reliability | ✅ Built; two bring-up bugs | systemd units with `Restart=always` and real hardening, provisioning script, ops README that covers the spec's hardware gotchas properly. Static server doesn't serve the files the kiosk fetches. |
-| F. Dev harness | ⚠️ Mostly done; can't run the loop | Mock camera + clips, mock generation cases, two-window dev script, conformance suites. No `/generate` proxy in dev, so M1 can't actually be demonstrated. |
-| G. Writer prompt + content | ⚠️ Written, never executed | Prompt, deny-list, 40 fallback conversations, pre-roll pool, 32-case eval set. The prompt has never been run against a model and the eval set has no images. |
-| H. Grade tuning + wall label | ❌ Not started | Lane A parameterised every knob, so this is unblocked. No tuning pass, no `content/grade-tuning.md`, no wall label draft. |
-| I. Integration + bring-up | ❌ Not started | The gap. See §5. |
+| A. Kiosk shell + video | ✅ Built, unverified on hardware | Cameras pinned by deviceId/label with no enumeration fallback, both feeds mirrored, praise grade complete and photographic-only, debug overlay live. MJPEG can't be forced from the browser — needs `v4l2-ctl` verification on the Pi. |
+| B. Detection + state machine | ✅ Built and wired | Model is spec-exact (160×120, running-average background, ROI mask, hysteresis both edges, freeze during PERFORMING). Detection now drives the machine. ROI coordinate mapping fixed and tested. |
+| C. Generation + safety gate | ⚠️ Wired; **provider unratified** | `parseGateBeforeBeats` never touches beats on skip, proven end to end through real HTTP, not just unit tests. Frame stays in memory. The provider is still OpenAI-shaped by default and nobody decided that. |
+| D. Presentation | ✅ Built and wired | Typewriter, strict alternation via a `beat_done` handshake, accumulate at 40%, abort fade, pre-roll painted synchronously on ARMED and loaded from `content/`. |
+| E. Server + reliability | ✅ Built; bring-up bugs fixed | systemd units with `Restart=always` and real hardening, provisioning, ops README covering the spec's hardware gotchas. Now serves `/content` and `/config.json`; the dash shebang that would have restart-looped on the Pi is fixed. |
+| F. Dev harness | ✅ Dev loop runs | Mock cameras and clips, mock generation cases, conformance suites. `npm run dev` now starts the API alongside Vite and proxies `/generate`, so the whole loop runs on a laptop. |
+| G. Writer prompt + content | ⚠️ Written, **never executed** | Prompt, deny-list, 40 fallback conversations, pre-roll pool, 32-case eval set, all enforced by tests. The prompt has never been run against a model and the eval set has no images. |
+| H. Grade tuning + wall label | ❌ Not started | Every knob is parameterised and defaults ship, so this is unblocked. No tuning pass, no `content/grade-tuning.md`, no wall label draft. |
+| I. Integration + bring-up | ⚠️ Software done, hardware not started | Seams closed and verified. No day-one measurements, no thermal run, no burn-in, nothing on a Pi. |
 
-**Milestone reality:** M1 (full loop on a laptop) is **not met** — no path currently exists from a trigger to four rendered beats. M2 and M3 are untouched, which is expected.
+**Milestone reality:** M1 is met *in code and in tests*, but **has never been run in a browser** — nobody has opened two windows and watched a performance, and no beat has ever come from a real model. Doing that needs no hardware and no decisions, and it is the single highest-value next step. M2 and M3 are untouched, as expected.
 
 ---
 
@@ -55,10 +57,10 @@ Two-window boot, camera acquisition, MJPEG forcing, mirroring, praise-side grade
 - Praise grade per spec §3: CSS `filter` chain (saturate/contrast/brightness/slight sepia), radial-gradient vignette overlay, duplicated-blurred-layer bloom, radial-masked blurred underlay for soft-focus falloff. Ship it parameterized (CSS custom properties driven from `config.json`) so lane H can tune without touching code. **Photographic only — no landmark/geometry warping, ever** (spec §9).
 - Deliverable includes the **day-one measurement harness**: a documented procedure + debug-overlay support for the stopwatch latency test and the 30-minute full-load CPU/thermal test (spec §3). These are make-or-break; build the harness first.
 
-### B. Detection + state machine **[spec'd]** — ⚠️ built, not wired
+### B. Detection + state machine **[spec'd]** — ✅ built and wired
 Runs in the praise (conductor) window only.
 
-> **Status:** delivered in `kiosk/src/detect/*` and `kiosk/src/state.ts`, with good tests. The occupancy model is spec-exact and the state machine implements every rule in spec §6 — generation fires on ARMED entry rather than after settle, PERFORMING ignores arrivals, a cleared zone aborts, SPENT needs one uninterrupted empty interval, F9 re-arms. Worker + `OffscreenCanvas` with a main-thread fallback. **Nothing constructs either class outside its test.**
+> **Status:** delivered in `kiosk/src/detect/*` and `kiosk/src/state.ts`, with good tests. The occupancy model is spec-exact and the state machine implements every rule in spec §6 — generation fires on ARMED entry rather than after settle, PERFORMING ignores arrivals, a cleared zone aborts, SPENT needs one uninterrupted empty interval, F9 re-arms. Worker + `OffscreenCanvas` with a main-thread fallback. Both are now constructed by `main.ts`, and the ROI editor's coordinate mapping has been corrected (§6.2).
 
 - Occupancy gate exactly per spec §6: 160×120 offscreen canvas at 3–4fps from the praise `<video>`, grayscale running-average background model, foreground fraction inside an ROI trapezoid, hysteresis on both edges, background model **frozen during PERFORMING**. Web Worker + `OffscreenCanvas` where supported.
 - ROI is hand-drawn: build a `?roi=1` editor mode (click to place trapezoid corners, persisted to `localStorage` + exportable into `config.json`). This gets used in the gallery in week 3 — make it usable by a human under time pressure.
@@ -79,10 +81,10 @@ The kiosk-side client and server-side endpoint for the ONE call.
 - Kiosk client: fire at ARMED, timeout at 6s, on timeout/error/skip pull a conversation from the **offline pool** (lane G authors; C implements loader + no-repeat shuffle).
 - Also implement frame capture: praise `<video>` → canvas → JPEG blob, in-memory only, no disk writes, no logging of image data (spec §9 retention promise must stay literally true — do not add "helpful" debug frame dumps).
 
-### D. Presentation layer **[spec'd, but timing feel matters — Sonnet fine, get I to review on hardware]** — ⚠️ built, not wired
+### D. Presentation layer **[spec'd, but timing feel matters — Sonnet fine, get I to review on hardware]** — ✅ built and wired
 Everything the visitor reads.
 
-> **Status:** delivered in `kiosk/src/present/*`. Character-by-character typewriter with the first character painted synchronously so ARMED never shows a dead pause; strict alternation enforced by awaiting `beat_done` across windows rather than by timing; prior lines drop to `opacity: .4`; abort fades the whole layer. The pre-roll types on ARMED, praise-side only, and beat 1 waits for it to finish. **Not constructed anywhere outside its test, and it takes the pre-roll pool as an injected array — nothing loads `content/preroll-pool.json`.**
+> **Status:** delivered in `kiosk/src/present/*`. Character-by-character typewriter with the first character painted synchronously so ARMED never shows a dead pause; strict alternation enforced by awaiting `beat_done` across windows rather than by timing; prior lines drop to `opacity: .4`; abort fades the whole layer. The pre-roll types on ARMED, praise-side only, and beat 1 waits for it to finish. `main.ts` now constructs it for both roles and loads `content/preroll-pool.json`, falling back to a built-in greeting if that file cannot be reached.
 
 - Typewriter reveal, character by character; strict alternation (one screen types while the other holds); accumulate-don't-replace with prior beats dimmed to ~40%; white on black over video (spec §7).
 - Pre-roll beat: on ARMED, praise screen instantly types a canned two-word acknowledgment from a small local pool; generated beats then start as beat 2 (spec §7). This must be instant — no network, no awaits.
@@ -90,7 +92,7 @@ Everything the visitor reads.
 - Abort path: mid-sequence fade-out (zone cleared) that doesn't look like a crash.
 - Total reveal budget ~18–25s for four beats; expose per-character delay + inter-beat gaps in `config.json` for tuning.
 
-### E. Server + reliability **[spec'd]** — ✅ built; two bring-up bugs
+### E. Server + reliability **[spec'd]** — ✅ built; bring-up bugs fixed
 > **Status:** delivered in `server/{index,config,static,video-watchdog}.ts` and `ops/*`. Both systemd units restart always; the server unit runs `NoNewPrivileges`, `ProtectSystem=strict`, `ProtectHome`. `provision-pi.sh` installs packages, builds, installs units, and creates a 0600 env file. `ops/README.md` covers the spec's hardware gotchas — independent HDMI enumeration, by-id/by-path camera pinning, MJPEG confirmation, Ethernet, throttling checks, and an honest warning that X11 window coordinates don't carry to Wayland. `COLD_SPARE.md` exists.
 
 - The Node server itself: static file serving, `/generate`, `/health`, config loading, env-var API key.
@@ -99,7 +101,7 @@ Everything the visitor reads.
 - SD image checklist for the cold spare.
 - A blank screen is the only visitor-perceivable failure (spec §8) — add a kiosk-side watchdog: if the video element stalls >5s, hard-reload the window.
 
-### F. Dev harness / fake hardware **[spec'd — do this FIRST, it unblocks everyone]** — ⚠️ mostly built
+### F. Dev harness / fake hardware **[spec'd — do this FIRST, it unblocks everyone]** — ✅ built
 > **Status:** delivered in `dev-harness/*`, `kiosk/src/dev/mock-camera.ts`, `fixtures/*`, `test/conformance/*`. Mock camera swaps in looping WebM clips (empty room / one person / three people) via `captureStream()`; the clips are generated deterministically by a checked-in script and contain synthetic silhouettes, not people. Mock generation covers normal/skip/malformed/slow, and the skip fixture carries sentinel text so a leak would be visible. Conformance suites encode the parser and state-transition requirements without owning either lane's API.
 
 Most agents won't have a Pi, two C920s, or two displays. Build the substitute layer:
@@ -126,8 +128,8 @@ The spec is explicit (§10): this and filter tuning decide whether the piece rea
 - Tune the praise-side grade parameters (via lane A's CSS custom properties): subtle enough not to be clocked immediately, strong enough to notice on a glance between screens (spec §7). Do a first pass on mock video; final tuning is on-site by a human — document the knobs and sane ranges in `content/grade-tuning.md`.
 - Draft wall label text per spec §9: states the piece comments on appearance; notes incidental background capture; states no images/data recorded or retained (verify against the actual API provider's retention terms before finalizing — flag this as a human task).
 
-### I. Integration + hardware bring-up **[one agent, or the human + one agent, serially]** — ❌ not started
-> **Status:** the gap. Every other lane built to its contract and stopped at its own boundary, exactly as instructed — which means the seams were never closed by anyone. This is now the critical path and everything in §5 is downstream of it.
+### I. Integration + hardware bring-up **[one agent, or the human + one agent, serially]** — ⚠️ software done, hardware not started
+> **Status:** the seams are closed (§6.2) and the loop is covered by `kiosk/src/integration.test.ts`. What is left in this lane is entirely hardware and on-site: day-one latency and CPU measurements, the 30-minute thermal run, burn-in, ROI drawn in situ, grade tuned in the room, cold spare flashed. None of it can start without the Pi.
 
 Not parallel — this lane owns `main`, merges the others, and runs on real hardware in weeks 2–3. Owns the day-one measurements (using lane A's harness), burn-in, thermal watching, and the spec §10 week-2 failure hunt. Also owns resolving any `[CONTRACT]` change requests.
 
@@ -174,7 +176,9 @@ Conductor (praise) → follower (roast):
 { type: "reset" }                      // clear all text layers
 ```
 
-Conductor owns all timing; the follower is stateless apart from its text layers. If the follower reloads mid-performance it comes back blank and rejoins at the next `reset` — acceptable.
+Conductor owns all timing; the follower is stateless apart from its text layers. If the follower reloads mid-performance it comes back blank and rejoins at the next `reset` — acceptable, which is why `isBusEvent` validates anything arriving on the channel.
+
+**Implemented in `kiosk/src/bus.ts`, which is the only definition.** `state.ts` and `present/types.ts` import it and alias it to their original names (`ConductorEvent`, `PresentationEvent`). Do not redeclare this union anywhere else — it previously existed in two partial copies, which is how the two windows ended up never speaking.
 
 ### 2.4 `config.json` (checked in as `config.example.json`; real one is per-device)
 
@@ -191,19 +195,26 @@ Conductor owns all timing; the follower is stateless apart from its text layers.
 
 Field names above are frozen; numeric values are tuning defaults, change freely.
 
+**Implemented in `kiosk/src/config.ts`** (`KioskConfig`, `loadKioskConfig`, `DEFAULT_KIOSK_CONFIG`), with `config.example.json` checked in and served by the node server at both `/config.json` (falling back to the example) and `/config.example.json`. Every field validates individually and falls back on its own; a missing or malformed config never throws.
+
 ### 2.5 Repo layout
 
 ```
 server/           # lane E owns; lane C owns generate.ts + denylist wiring
 kiosk/src/
-  main.ts         # lane A (boot, role selection)
+  main.ts         # boot, role selection, and the conductor/follower wiring
+  config.ts       # contract §2.4 — change only via [CONTRACT]
+  bus.ts          # contract §2.3 — change only via [CONTRACT]
   video.ts        # lane A (cameras, grade)
   detect/         # lane B (worker, ROI editor, background model)
   state.ts        # lane B
   gen-client.ts   # lane C
   present/        # lane D (typewriter, layers, preroll)
-  bus.ts          # contract §2.3 — change only via [CONTRACT]
-fixtures/         # lane F; eval photos lane G
+  watchdog.ts     # reload on a stalled video element
+  integration.test.ts   # the whole loop, end to end
+config.example.json     # contract §2.4, per-device copy is config.json (gitignored)
+tsconfig{,.kiosk,.server}.json   # npm run typecheck
+fixtures/         # lane F; eval photos lane G (untracked)
 content/          # lane G/H — prompts, pools, denylist, tuning notes
 ops/              # lane E — systemd units, provisioning, chromium launch
 docs/             # this file, spec, measurement procedures
@@ -219,6 +230,13 @@ docs/             # this file, spec, measurement procedures
 4. **Don't "improve" the spec.** In particular (all explicitly rejected in the spec): no second camera stream, no OpenCV on the display path, no GStreamer (unless lane I's latency measurement fails), no face detection, no audio, no geometry-warping beauty filter, no removing any of the three safety mitigations, no making the gate check prompt-level-only.
 5. **Safety invariants are load-bearing** and cross lanes C+G: gate parsed before beats, skipped beats never leave the server, deny-list runs before render, frames never persisted. If your change touches any of these, say so in the PR description even if it seems incidental.
 6. **Small PRs against `main`, rebase daily.** Lane I merges; content lanes (G/H) can merge any time since they touch only `content/`.
+
+**How this actually played out (2026-08-09), because more concurrent work is coming.** There were no PRs and no branches — two agents worked simultaneously in one shared working tree, and it was clean. What made it work was not the PR mechanics but the two things underneath them:
+
+- **The contract was frozen before either side started.** `main.ts` was written against `kiosk/src/config.ts` while that file did not yet exist, because its exact export shape was agreed and written into §6.1 first. Neither side had to wait, and the two halves met without an adaptation layer.
+- **File ownership was stated explicitly and by name**, not implied by lane. Each agent was told which paths belonged to the other. Zero collisions across ~30 changed files.
+
+The one hiccup was informative: the shared typecheck flagged an error in the *other* agent's file, which briefly looked like work to do. Say who owns a file the moment that happens rather than fixing across the fence.
 
 ---
 
@@ -241,49 +259,30 @@ H waits on A's grade knobs (days, not weeks)
 
 ---
 
-## 5. What's left (from the 2026-08-09 review)
+## 5. What's left
 
-Roughly in the order it should be done. §5.1 blocks everything else.
+The integration gaps, all six bugs, and the project-hygiene items the 2026-08-09 review found are **resolved** — §6 records what was done and how each was verified. What remains is below. None of it is blocked on more code.
 
-### 5.1 Integration — the critical path (lane I)
+### 5.1 Decisions only a human can make
 
-Every lane built to its contract and stopped at its boundary, so no one closed the seams. Concretely:
+- **Which model provider.** `server/model.ts` still defaults to OpenAI chat-completions with `gpt-4.1-mini`; the spec never named a provider, so this was chosen in implementation and has never been ratified. Switching to Claude means the Messages API shape in `model.ts` (image content block with a base64 source, `output_config.format`, an explicit `max_tokens`) and `ANTHROPIC_API_KEY` in `config.ts`.
+- **Whether the provider really emits JSON properties in schema order.** This is the single most safety-critical untested assumption in the build. `parseGateBeforeBeats` throws if the order drifts, which fails *safe* into the offline pool — but if it drifts on every call, no generated performance ever renders and the piece silently becomes forty canned conversations on a loop. One live call answers it. Do this before anything else.
+- **Where the writer prompt goes.** It is sent as a user-turn text block next to the image; `content/README.md` documents it as a system prompt. Make the two agree.
+- **Monitor model and mount orientation** (spec §11) — still blocks final layout numbers.
 
-- **`kiosk/src/main.ts` boots video and stops.** It needs the conductor/follower split, detection feeding the state machine, the state machine calling the generation client, and the presentation layer rendering the result. Right now it creates an empty `#text-layers` element that nothing ever writes to.
-- **`kiosk/src/bus.ts` (§2.3) was never created.** The contract exists twice and partially: the `ConductorEvent` union lives in `state.ts`, and a bare `createMirrorMirrorChannel()` lives in `present/index.ts`. Neither is the shared typed module the plan froze, and the two windows have never spoken to each other.
-- **`config.example.json` (§2.4) was never created.** `main.ts` fetches `/config.json`, then `/config.example.json`, then falls back to defaults with empty camera selectors — which throws *"Camera selector is empty"* at boot. Nothing on the Pi is configurable today. `ops/README.md` already tells the installer to put by-id paths in "the deployed `config.json`" that no file describes.
-- **`main.ts` drops most of the config contract.** It parses `cameras`, `video`, and `grade`; `detection`, `timing`, and `rearm_key` are ignored.
-- **The server doesn't serve the files the kiosk fetches.** `serveStatic` roots at `kiosk/dist`, so `/content/offline-pool.json` (the gen-client's default URL) and `/config.json` both 404. The offline pool is specifically the thing that must never fail.
-- **Nothing loads `content/preroll-pool.json`.** `Presentation` takes the pool as an injected array.
-- **`installVideoStallWatchdog` is unwired** and lives in `server/` despite being browser code. Move to `kiosk/src/` and call it.
-- **Wire `Presentation`'s completion back to `stateMachine.complete()`**, or the machine never reaches SPENT.
+### 5.2 Never done, and still the real risks
 
-### 5.2 Bugs found in review
+- **Run it in a browser.** M1 is proven in tests but nobody has opened two windows and watched a performance. `npm run dev` now does the whole loop against mocks. This needs no hardware and no decisions.
+- **Run the writer prompt against a model.** The gate is unproven and the tone unjudged. Needs the provider decision plus eval photographs (`fixtures/eval/README.md` covers sourcing and consent).
+- **Grade tuning and the wall label** (lane H). Unblocked — every knob is parameterised. The label depends on the provider's retention terms.
+- **Everything on the Pi** (lane I): day-one latency and CPU measurements, the 30-minute thermal run, burn-in, ROI drawn in situ, grade tuned in the room, cold spare flashed.
 
-1. **ROI editor coordinate space — highest consequence.** `roi-editor.ts:62` records clicks in screen space, but the detector samples the *unmirrored* source video. CSS mirrors the display with `scaleX(-1)`, so x is flipped between the two; `object-fit: cover` crops differently again when window and video aspect ratios differ. **The ROI drawn on site will gate on the wrong region.** Fix before week 3 — this gets drawn in the gallery under time pressure, and it will look like a detection tuning problem rather than a coordinate bug.
-2. **`launch-chromium.sh` uses `wait -n` under `#!/bin/sh`.** Raspberry Pi OS `/bin/sh` is dash, which has no `wait -n`; with `set -eu` the script exits, `cleanup` kills both browsers, systemd restarts, and it loops. Change the shebang to `#!/bin/bash`.
-3. **Camera label lookup runs before permission is granted.** `resolveCameraDeviceId` calls `enumerateDevices()` before any `getUserMedia`, so on a fresh kiosk profile labels are empty and a by-label selector fails with the permission hint. Needs a throwaway `getUserMedia` first, or a bring-up step that records the opaque `deviceId`s after granting once.
-4. **A rejected generation strands the machine in ARMED.** `state.ts:89` swallows the rejection deliberately, but the visitor then sees the pre-roll and nothing else until they walk away — which contradicts §8's "a blank screen is the only failure state a visitor can perceive". Latent today because lane C's client resolves with a fallback rather than rejecting, but the conductor shouldn't depend on that.
-5. **`commandExists()` always returns true** (`open-two-windows.mjs`), so `npm run dev` spawns `google-chrome` whether or not it exists and the "open these URLs manually" fallback never prints.
-6. **`publicDir: "../fixtures"`** copies the whole fixture tree into the kiosk build, including `fixtures/eval/`. Harmless today, but if eval photographs are ever added they would be published into the built kiosk, against the retention promise on the wall label.
+### 5.3 Follow-ups found while integrating — small, none blocking
 
-### 5.3 Decisions only a human can make
-
-- **Which model provider.** `server/model.ts` calls OpenAI chat-completions with a `gpt-4.1-mini` default; the spec never named a provider, so this was chosen in implementation. Ratify it or switch. Switching to Claude means the Messages API shape in `model.ts` (image content block with a base64 source, `output_config.format`, an explicit `max_tokens`) and `ANTHROPIC_API_KEY` in `config.ts`. **Either way, the assumption that the provider emits JSON properties in schema order is the most safety-critical untested thing in the build** — `parseGateBeforeBeats` throws if the order drifts, which fails safe into the offline pool, but if it drifts *always* then no generated performance ever renders. Verify against the live provider early.
-- **Where the writer prompt goes.** It is currently sent as a user-turn text block next to the image; `content/README.md` documents it as a system prompt. Pick one and make the two agree.
-- **Monitor model and orientation** (spec §11) still blocks final layout numbers.
-
-### 5.4 Project hygiene
-
-- **Nothing typechecks the TypeScript.** There is no `tsconfig.json` and no `@types/node`; Vite strips types and `node --test` strips types. Type errors across module boundaries — exactly the errors integration will produce — are currently invisible. Add a tsconfig, `@types/node`, and an `npm run typecheck`.
-- **No npm script for the server build.** `provision-pi.sh` calls `npx vite build --config server/vite.config.ts` directly.
-- **No `/generate` proxy in dev.** `npm run dev` starts Vite alone, so even after wiring, the full loop can't be demonstrated on a laptop. Either proxy `/generate` to the node server or start both from the dev script.
-
-### 5.5 Still outstanding from the original plan
-
-- **Lane G:** source eval photographs, run the prompt against a live model, score the gate. Untested prompt is the biggest quality risk in the project.
-- **Lane H:** grade tuning pass, `content/grade-tuning.md`, wall label draft (needs the provider's retention terms, so it depends on §5.3).
-- **Lane I:** day-one latency and CPU measurements, 30-minute thermal run, burn-in, on-site ROI and grade tuning, cold spare flashed.
+- **No timeout on `beat_done`.** If the roast window is closed or crashed, the conductor waits forever partway through a performance. It recovers when the visitor leaves, but a follower-liveness timeout that finishes on the praise screen alone would match §8 better.
+- **A saved ROI needs a page reload.** `VideoOccupancyDetector` exposes no `setRoi` passthrough. Fine if the on-site procedure says "save, then reload"; worth wiring before week 3.
+- **`/content/*` serves the whole directory**, so `writer-prompt.md` is fetchable. Loopback-only, so local-only — but an allowlist of the three JSON files the kiosk needs would be tighter.
+- **MJPEG is still unverified.** It cannot be forced from the browser; `docs/day-one-measurements.md` has the `v4l2-ctl` procedure, and it has to run on the Pi.
 
 ---
 
@@ -356,10 +355,7 @@ Ordered. Items 1–2 are the critical path; 6.1#1 and 6.1#2 should land first.
 
 ### 6.3 Blocked on a human
 
-- **Which model provider**, and therefore the retention terms the wall label has to be literally true about.
-- **Monitor model and mount orientation** — still open from spec §11; blocks final layout numbers.
-- **Eval photographs** — consented or licensed, per `fixtures/eval/README.md`. Nothing in §6.2 #7 can start without them.
-- **Everything on the Pi**: day-one latency and CPU measurements, the 30-minute thermal run, burn-in, and on-site ROI and grade tuning. Claude can interpret the results; it cannot take them.
+See §5.1 and §5.2, which are the live list — kept in one place so the two do not drift. In short: the provider decision (and the retention terms the wall label depends on), the monitor inventory, eval photographs, and every measurement that needs the Pi.
 
 ---
 
