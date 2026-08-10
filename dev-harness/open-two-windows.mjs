@@ -13,7 +13,7 @@ const urls = ["praise", "roast"].map(
 
 const viteBin = new URL("../node_modules/vite/bin/vite.js", import.meta.url).pathname;
 const serverEntry = new URL("../server/index.ts", import.meta.url).pathname;
-const api = spawn(process.execPath, ["--experimental-strip-types", serverEntry], {
+const api = spawn(process.execPath, ["--env-file-if-exists=.env", "--experimental-strip-types", serverEntry], {
   env: { ...process.env, MOCK_GENERATION: "1", HOST: "127.0.0.1", PORT: "4173", STATIC_DIR: "kiosk" },
   stdio: ["ignore", "inherit", "inherit"],
 });

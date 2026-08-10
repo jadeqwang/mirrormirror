@@ -1,0 +1,51 @@
+#!/bin/sh
+# Last line of local defence before a public repo.
+#
+# GitHub push protection is the real backstop and it is already on — it blocks a
+# recognised Cloudflare token server-side, even from a machine that never ran
+# this hook. This exists to fail earlier and louder, and to catch the cases
+# push protection does not: an env file staged by accident, or a credential
+# shape GitHub does not have a partner pattern for.
+#
+# Installed automatically by `npm install` (the `prepare` script sets
+# core.hooksPath). To set it up by hand:  git config core.hooksPath .githooks
+# To bypass deliberately:                 git commit --no-verify
+
+set -eu
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+fail() {
+  echo "pre-commit: refusing to commit — $1" >&2
+  echo "  If this is a false positive: git commit --no-verify" >&2
+  exit 1
+}
+
+# 1. Env files, whatever they are called. .env.example is the one exception.
+for file in $staged; do
+  case "$file" in
+    .env.example) ;;
+    .env|.env.*|*.env|*/.env|*/.env.*|*/*.env)
+      fail "$file looks like an environment file. Credentials belong in .env (gitignored) or /etc/mirrormirror/server.env on the Pi." ;;
+  esac
+done
+
+# 2. Credential-shaped assignments in staged content. Deliberately narrow:
+#    an assignment to a known key name with a long value, minus placeholders.
+secrets=$(git diff --cached -- $staged \
+  | grep -E '^\+' \
+  | grep -Ei '(CLOUDFLARE_API_TOKEN|CLOUDFLARE_ACCOUNT_ID|OPENAI_API_KEY|ANTHROPIC_API_KEY|AUTH_TOKEN|API_KEY|SECRET)[[:space:]]*[:=][[:space:]]*.?[A-Za-z0-9_-]{16,}' \
+  | grep -Eiv 'replace-me|your-|example|placeholder|xxxx|<[^>]+>|\$\{|process\.env|env\.' \
+  || true)
+[ -n "$secrets" ] && fail "a staged line looks like a real credential:
+$(printf '%s' "$secrets" | head -3 | sed 's/^/    /')"
+
+# 3. Well-known token prefixes and private keys, wherever they appear.
+prefixes=$(git diff --cached -- $staged \
+  | grep -E '^\+' \
+  | grep -E 'sk-ant-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY' \
+  || true)
+[ -n "$prefixes" ] && fail "a staged line contains a recognised token or private key."
+
+exit 0

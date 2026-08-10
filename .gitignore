@@ -7,3 +7,10 @@ config.json
 # visitor images are retained. Keep them out of the repo. See fixtures/eval/README.md.
 fixtures/eval/images/*
 !fixtures/eval/images/README.md
+
+# Credentials. Never commit these; .env.example is the checked-in template.
+# On the Pi they live in /etc/mirrormirror/server.env instead, outside the repo.
+.env
+.env.*
+*.env
+!.env.example

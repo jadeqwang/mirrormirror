@@ -55,10 +55,20 @@ Useful URL parameters, all on the kiosk app:
 ### Running against the real model
 
 ```sh
-export CLOUDFLARE_ACCOUNT_ID=...   # Workers AI, paid plan or AI Gateway credits
-export CLOUDFLARE_API_TOKEN=...    # needs the Workers AI Read permission
+cp .env.example .env      # then fill in the two Cloudflare values
 npm run verify:provider -- path/to/a/photo.jpg
 ```
+
+`.env` is gitignored, and everything that needs credentials loads it automatically
+through Node's `--env-file-if-exists` — nothing to export, nothing to remember per
+shell. Create the token at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
+scoped to **Account · Workers AI · Read** and nothing else, with an expiry a little
+past the show. Never the Global API Key: the Pi is a physical device in a public room.
+
+Three things keep it out of git, in increasing order of reliability: `.gitignore`, a
+`pre-commit` hook installed automatically by `npm install` (bypass with `--no-verify`),
+and GitHub push protection, which is already enabled on this repo and blocks a
+recognised Cloudflare token server-side even from a machine that never ran the hook.
 
 Do that **before** wiring it into a show. The piece makes one structured call whose
 gate fields must arrive before the beats (see below), and Cloudflare states that

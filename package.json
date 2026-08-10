@@ -10,7 +10,9 @@
     "fixtures:video": "node dev-harness/generate-video-fixtures.mjs",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.kiosk.json && tsc -p tsconfig.server.json",
-    "verify:provider": "node --experimental-strip-types server/verify-provider.ts"
+    "verify:provider": "node --env-file-if-exists=.env --experimental-strip-types server/verify-provider.ts",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "start": "node --env-file-if-exists=.env dist-server/index.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
