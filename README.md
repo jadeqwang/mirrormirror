@@ -25,14 +25,22 @@ Being straight about what that does *not* mean:
 
 ---
 
-## Running it
+## Quick start
+
+You need Node 22.9 or newer — the scripts run TypeScript directly and load `.env`
+through Node's own flags — and a Chromium-based browser. Nothing else: the first
+path below has no camera, no API key, and no hardware in it.
 
 ```sh
 npm install
 npm run dev
 ```
 
-That starts the API with mock generation, starts Vite, and opens both roles in a browser using looping video clips instead of cameras — no webcam, no API key, no hardware. You should see the praise screen greet you, then four beats alternate between the windows.
+That starts the API with mock generation, starts Vite, and opens both roles in a browser using looping video clips instead of cameras. You should see the praise screen greet you, then four beats alternate between the windows. `Ctrl-C` stops both processes.
+
+If no Chromium is found it prints the two URLs instead — open them in separate windows, praise first, and put them side by side. Both roles must be running: the praise window conducts and the roast window will sit idle on its own.
+
+From there the path widens in two steps, each its own section below: [the real model](#running-against-the-real-model) in place of mock generation, then [a desk rehearsal](#rehearsing-on-a-desk) with two real cameras, which is the whole piece minus the Pi.
 
 ```sh
 npm test         # unit + integration tests
@@ -93,6 +101,10 @@ cp config.example.json config.json     # gitignored, per-machine
 npm run rehearse                       # build both, serve on :4173, real model
 npm run screens                        # two windows, side by side
 ```
+
+`npm run screens` calls `chromium`; if the machine has Chrome under another name,
+`CHROMIUM_BIN=google-chrome npm run screens`. Unlike `npm run dev` it does not go
+looking, because on the Pi the browser is pinned deliberately.
 
 Camera selectors are the only thing to fill in. Leave them as the placeholders on the
 first run: each window fails to boot and prints the cameras it can actually see, with
